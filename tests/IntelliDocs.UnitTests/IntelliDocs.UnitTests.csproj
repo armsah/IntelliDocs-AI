@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\IntelliDocs.Core\IntelliDocs.Core.csproj" />
+    <ProjectReference Include="..\..\src\IntelliDocs.Infrastructure\IntelliDocs.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

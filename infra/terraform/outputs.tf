@@ -47,3 +47,12 @@ output "postgresql_location" {
   description = "Azure region hosting PostgreSQL Flexible Server."
   value       = azurerm_postgresql_flexible_server.main.location
 }
+output "document_intelligence_name" {
+  description = "Azure AI Document Intelligence account name."
+  value       = azurerm_cognitive_account.document_intelligence.name
+}
+
+output "document_intelligence_endpoint" {
+  description = "Azure AI Document Intelligence endpoint."
+  value       = azurerm_cognitive_account.document_intelligence.endpoint
+}

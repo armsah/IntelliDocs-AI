@@ -1,0 +1,846 @@
+{
+  "ModelId": "prebuilt-invoice",
+  "ModelVersion": null,
+  "Content": "INVOICE\nFictional Supplier GmbH\nInvoice Number: INV-2026-1001\nMusterstrasse 10\nInvoice Date: 2026-09-14\n10115 Berlin, Germany\nDue Date: 2026-10-14\nTax ID: DE 123456789\nCurrency: EUR\nBill To\nExample Customer AG\nTestallee 25\n20095 Hamburg, Germany\nDescription\nQuantity\nUnit Price\nAmount\nDocument processing service\n2\n500.00 EUR\n1,000.00 EUR\nSubtotal: 1,000.00 EUR\nVAT 19%: 190.00 EUR\nTotal: 1,190.00 EUR\nPurchase Order: PO-2026-0042\nSynthetic portfolio sample - no real customer data",
+  "Pages": [
+    {
+      "PageNumber": 1,
+      "Width": 1400,
+      "Height": 1800,
+      "Unit": "pixel",
+      "Lines": [
+        {
+          "Content": "INVOICE",
+          "Polygon": [
+            86,
+            74,
+            252,
+            74,
+            252,
+            110,
+            86,
+            110
+          ]
+        },
+        {
+          "Content": "Fictional Supplier GmbH",
+          "Polygon": [
+            83,
+            162,
+            408,
+            162,
+            408,
+            191,
+            83,
+            191
+          ]
+        },
+        {
+          "Content": "Invoice Number: INV-2026-1001",
+          "Polygon": [
+            763,
+            162,
+            1103,
+            161,
+            1103,
+            185,
+            763,
+            186
+          ]
+        },
+        {
+          "Content": "Musterstrasse 10",
+          "Polygon": [
+            83,
+            207,
+            268,
+            207,
+            268,
+            231,
+            83,
+            231
+          ]
+        },
+        {
+          "Content": "Invoice Date: 2026-09-14",
+          "Polygon": [
+            763,
+            207,
+            1031,
+            207,
+            1032,
+            230,
+            763,
+            231
+          ]
+        },
+        {
+          "Content": "10115 Berlin, Germany",
+          "Polygon": [
+            85,
+            246,
+            329,
+            248,
+            329,
+            273,
+            85,
+            272
+          ]
+        },
+        {
+          "Content": "Due Date: 2026-10-14",
+          "Polygon": [
+            763,
+            247,
+            999,
+            247,
+            999,
+            270,
+            763,
+            271
+          ]
+        },
+        {
+          "Content": "Tax ID: DE 123456789",
+          "Polygon": [
+            83,
+            287,
+            320,
+            286,
+            320,
+            310,
+            83,
+            311
+          ]
+        },
+        {
+          "Content": "Currency: EUR",
+          "Polygon": [
+            763,
+            287,
+            925,
+            287,
+            925,
+            312,
+            763,
+            312
+          ]
+        },
+        {
+          "Content": "Bill To",
+          "Polygon": [
+            83,
+            392,
+            170,
+            391,
+            170,
+            418,
+            83,
+            418
+          ]
+        },
+        {
+          "Content": "Example Customer AG",
+          "Polygon": [
+            83,
+            442,
+            328,
+            441,
+            328,
+            467,
+            84,
+            468
+          ]
+        },
+        {
+          "Content": "Testallee 25",
+          "Polygon": [
+            83,
+            481,
+            214,
+            481,
+            214,
+            506,
+            83,
+            506
+          ]
+        },
+        {
+          "Content": "20095 Hamburg, Germany",
+          "Polygon": [
+            83,
+            521,
+            366,
+            523,
+            366,
+            549,
+            82,
+            548
+          ]
+        },
+        {
+          "Content": "Description",
+          "Polygon": [
+            83,
+            651,
+            236,
+            652,
+            236,
+            682,
+            83,
+            681
+          ]
+        },
+        {
+          "Content": "Quantity",
+          "Polygon": [
+            693,
+            651,
+            805,
+            652,
+            805,
+            682,
+            693,
+            682
+          ]
+        },
+        {
+          "Content": "Unit Price",
+          "Polygon": [
+            873,
+            652,
+            1004,
+            652,
+            1004,
+            679,
+            873,
+            679
+          ]
+        },
+        {
+          "Content": "Amount",
+          "Polygon": [
+            1113,
+            652,
+            1219,
+            652,
+            1219,
+            679,
+            1113,
+            679
+          ]
+        },
+        {
+          "Content": "Document processing service",
+          "Polygon": [
+            84,
+            722,
+            396,
+            722,
+            396,
+            749,
+            84,
+            748
+          ]
+        },
+        {
+          "Content": "2",
+          "Polygon": [
+            724,
+            722,
+            738,
+            723,
+            738,
+            744,
+            723,
+            744
+          ]
+        },
+        {
+          "Content": "500.00 EUR",
+          "Polygon": [
+            873,
+            721,
+            1004,
+            721,
+            1004,
+            745,
+            873,
+            745
+          ]
+        },
+        {
+          "Content": "1,000.00 EUR",
+          "Polygon": [
+            1115,
+            721,
+            1264,
+            720,
+            1265,
+            747,
+            1115,
+            747
+          ]
+        },
+        {
+          "Content": "Subtotal: 1,000.00 EUR",
+          "Polygon": [
+            902,
+            931,
+            1155,
+            931,
+            1155,
+            957,
+            902,
+            957
+          ]
+        },
+        {
+          "Content": "VAT 19%: 190.00 EUR",
+          "Polygon": [
+            902,
+            981,
+            1149,
+            981,
+            1150,
+            1006,
+            902,
+            1006
+          ]
+        },
+        {
+          "Content": "Total: 1,190.00 EUR",
+          "Polygon": [
+            903,
+            1042,
+            1160,
+            1041,
+            1160,
+            1069,
+            903,
+            1070
+          ]
+        },
+        {
+          "Content": "Purchase Order: PO-2026-0042",
+          "Polygon": [
+            83,
+            1171,
+            422,
+            1171,
+            422,
+            1196,
+            83,
+            1196
+          ]
+        },
+        {
+          "Content": "Synthetic portfolio sample - no real customer data",
+          "Polygon": [
+            83,
+            1602,
+            610,
+            1602,
+            610,
+            1629,
+            83,
+            1628
+          ]
+        }
+      ]
+    }
+  ],
+  "Fields": [
+    {
+      "Name": "BillingAddress",
+      "Content": "Testallee 25\n20095 Hamburg, Germany",
+      "Confidence": 0.9010000228881836,
+      "BoundingRegions": [
+        {
+          "PageNumber": 1,
+          "Polygon": [
+            83,
+            480,
+            367,
+            482,
+            367,
+            550,
+            82,
+            548
+          ]
+        }
+      ]
+    },
+    {
+      "Name": "BillingAddressRecipient",
+      "Content": "Example Customer AG",
+      "Confidence": 0.9279999732971191,
+      "BoundingRegions": [
+        {
+          "PageNumber": 1,
+          "Polygon": [
+            84,
+            442,
+            329,
+            441,
+            329,
+            467,
+            84,
+            468
+          ]
+        }
+      ]
+    },
+    {
+      "Name": "CustomerName",
+      "Content": "Example Customer AG",
+      "Confidence": 0.9279999732971191,
+      "BoundingRegions": [
+        {
+          "PageNumber": 1,
+          "Polygon": [
+            84,
+            442,
+            329,
+            441,
+            329,
+            467,
+            84,
+            468
+          ]
+        }
+      ]
+    },
+    {
+      "Name": "DueDate",
+      "Content": "2026-10-14",
+      "Confidence": 0.9819999933242798,
+      "BoundingRegions": [
+        {
+          "PageNumber": 1,
+          "Polygon": [
+            878,
+            247,
+            1000,
+            247,
+            1000,
+            270,
+            878,
+            270
+          ]
+        }
+      ]
+    },
+    {
+      "Name": "InvoiceDate",
+      "Content": "2026-09-14",
+      "Confidence": 0.9829999804496765,
+      "BoundingRegions": [
+        {
+          "PageNumber": 1,
+          "Polygon": [
+            911,
+            207,
+            1032,
+            207,
+            1032,
+            230,
+            911,
+            231
+          ]
+        }
+      ]
+    },
+    {
+      "Name": "InvoiceId",
+      "Content": "INV-2026-1001",
+      "Confidence": 0.9829999804496765,
+      "BoundingRegions": [
+        {
+          "PageNumber": 1,
+          "Polygon": [
+            946,
+            162,
+            1104,
+            162,
+            1104,
+            186,
+            946,
+            186
+          ]
+        }
+      ]
+    },
+    {
+      "Name": "InvoiceTotal",
+      "Content": "1,190.00 EUR",
+      "Confidence": 0.9380000233650208,
+      "BoundingRegions": [
+        {
+          "PageNumber": 1,
+          "Polygon": [
+            988,
+            1041,
+            1160,
+            1041,
+            1160,
+            1070,
+            988,
+            1070
+          ]
+        }
+      ]
+    },
+    {
+      "Name": "Items",
+      "Content": null,
+      "Confidence": null,
+      "BoundingRegions": []
+    },
+    {
+      "Name": "PurchaseOrder",
+      "Content": "PO-2026-0042",
+      "Confidence": 0.9819999933242798,
+      "BoundingRegions": [
+        {
+          "PageNumber": 1,
+          "Polygon": [
+            267,
+            1171,
+            423,
+            1171,
+            422,
+            1196,
+            267,
+            1196
+          ]
+        }
+      ]
+    },
+    {
+      "Name": "SubTotal",
+      "Content": "1,000.00 EUR",
+      "Confidence": 0.9390000104904175,
+      "BoundingRegions": [
+        {
+          "PageNumber": 1,
+          "Polygon": [
+            1007,
+            931,
+            1156,
+            931,
+            1156,
+            957,
+            1007,
+            957
+          ]
+        }
+      ]
+    },
+    {
+      "Name": "TaxDetails",
+      "Content": null,
+      "Confidence": null,
+      "BoundingRegions": []
+    },
+    {
+      "Name": "TotalTax",
+      "Content": "190.00 EUR",
+      "Confidence": 0.9380000233650208,
+      "BoundingRegions": [
+        {
+          "PageNumber": 1,
+          "Polygon": [
+            1021,
+            981,
+            1150,
+            981,
+            1150,
+            1006,
+            1021,
+            1006
+          ]
+        }
+      ]
+    },
+    {
+      "Name": "VendorAddress",
+      "Content": "Musterstrasse 10\n10115 Berlin, Germany",
+      "Confidence": 0.8899999856948853,
+      "BoundingRegions": [
+        {
+          "PageNumber": 1,
+          "Polygon": [
+            83,
+            207,
+            330,
+            207,
+            330,
+            274,
+            83,
+            274
+          ]
+        }
+      ]
+    },
+    {
+      "Name": "VendorAddressRecipient",
+      "Content": "Fictional Supplier GmbH",
+      "Confidence": 0.9160000085830688,
+      "BoundingRegions": [
+        {
+          "PageNumber": 1,
+          "Polygon": [
+            83,
+            162,
+            408,
+            161,
+            408,
+            191,
+            83,
+            193
+          ]
+        }
+      ]
+    },
+    {
+      "Name": "VendorName",
+      "Content": "Fictional Supplier GmbH",
+      "Confidence": 0.9160000085830688,
+      "BoundingRegions": [
+        {
+          "PageNumber": 1,
+          "Polygon": [
+            83,
+            162,
+            408,
+            161,
+            408,
+            191,
+            83,
+            193
+          ]
+        }
+      ]
+    },
+    {
+      "Name": "VendorTaxId",
+      "Content": "DE 123456789",
+      "Confidence": 0.746999979019165,
+      "BoundingRegions": [
+        {
+          "PageNumber": 1,
+          "Polygon": [
+            170,
+            286,
+            321,
+            286,
+            321,
+            311,
+            170,
+            311
+          ]
+        }
+      ]
+    }
+  ],
+  "Tables": [
+    {
+      "RowCount": 2,
+      "ColumnCount": 4,
+      "Cells": [
+        {
+          "RowIndex": 0,
+          "ColumnIndex": 0,
+          "RowSpan": 1,
+          "ColumnSpan": 1,
+          "Content": "Description",
+          "BoundingRegions": [
+            {
+              "PageNumber": 1,
+              "Polygon": [
+                72,
+                642,
+                535,
+                642,
+                535,
+                701,
+                72,
+                702
+              ]
+            }
+          ]
+        },
+        {
+          "RowIndex": 0,
+          "ColumnIndex": 1,
+          "RowSpan": 1,
+          "ColumnSpan": 1,
+          "Content": "Quantity",
+          "BoundingRegions": [
+            {
+              "PageNumber": 1,
+              "Polygon": [
+                535,
+                642,
+                837,
+                642,
+                837,
+                701,
+                535,
+                701
+              ]
+            }
+          ]
+        },
+        {
+          "RowIndex": 0,
+          "ColumnIndex": 2,
+          "RowSpan": 1,
+          "ColumnSpan": 1,
+          "Content": "Unit Price",
+          "BoundingRegions": [
+            {
+              "PageNumber": 1,
+              "Polygon": [
+                837,
+                642,
+                1058,
+                642,
+                1058,
+                701,
+                837,
+                701
+              ]
+            }
+          ]
+        },
+        {
+          "RowIndex": 0,
+          "ColumnIndex": 3,
+          "RowSpan": 1,
+          "ColumnSpan": 1,
+          "Content": "Amount",
+          "BoundingRegions": [
+            {
+              "PageNumber": 1,
+              "Polygon": [
+                1058,
+                642,
+                1271,
+                642,
+                1271,
+                701,
+                1058,
+                701
+              ]
+            }
+          ]
+        },
+        {
+          "RowIndex": 1,
+          "ColumnIndex": 0,
+          "RowSpan": 1,
+          "ColumnSpan": 1,
+          "Content": "Document processing service",
+          "BoundingRegions": [
+            {
+              "PageNumber": 1,
+              "Polygon": [
+                72,
+                702,
+                535,
+                701,
+                535,
+                755,
+                71,
+                756
+              ]
+            }
+          ]
+        },
+        {
+          "RowIndex": 1,
+          "ColumnIndex": 1,
+          "RowSpan": 1,
+          "ColumnSpan": 1,
+          "Content": "2",
+          "BoundingRegions": [
+            {
+              "PageNumber": 1,
+              "Polygon": [
+                535,
+                701,
+                837,
+                701,
+                837,
+                755,
+                535,
+                755
+              ]
+            }
+          ]
+        },
+        {
+          "RowIndex": 1,
+          "ColumnIndex": 2,
+          "RowSpan": 1,
+          "ColumnSpan": 1,
+          "Content": "500.00 EUR",
+          "BoundingRegions": [
+            {
+              "PageNumber": 1,
+              "Polygon": [
+                837,
+                701,
+                1058,
+                701,
+                1058,
+                753,
+                837,
+                755
+              ]
+            }
+          ]
+        },
+        {
+          "RowIndex": 1,
+          "ColumnIndex": 3,
+          "RowSpan": 1,
+          "ColumnSpan": 1,
+          "Content": "1,000.00 EUR",
+          "BoundingRegions": [
+            {
+              "PageNumber": 1,
+              "Polygon": [
+                1058,
+                701,
+                1271,
+                701,
+                1271,
+                753,
+                1058,
+                753
+              ]
+            }
+          ]
+        }
+      ],
+      "BoundingRegions": [
+        {
+          "PageNumber": 1,
+          "Polygon": [
+            76,
+            646,
+            1268,
+            647,
+            1268,
+            750,
+            76,
+            750
+          ]
+        }
+      ]
+    }
+  ]
+}

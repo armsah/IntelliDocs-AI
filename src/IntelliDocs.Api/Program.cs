@@ -4,6 +4,8 @@ using IntelliDocs.Core.Storage;
 using IntelliDocs.Infrastructure.Persistence;
 using IntelliDocs.Infrastructure.Storage;
 using Microsoft.EntityFrameworkCore;
+using IntelliDocs.Core.DocumentIntelligence;
+using IntelliDocs.Infrastructure.DocumentIntelligence;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -41,6 +43,14 @@ builder.Services.AddSingleton(
 builder.Services.AddSingleton<
     IDocumentStorage,
     AzureBlobDocumentStorage>();
+
+builder.Services.Configure<DocumentIntelligenceOptions>(
+    builder.Configuration.GetSection(
+        DocumentIntelligenceOptions.SectionName));
+
+builder.Services.AddSingleton<
+    IDocumentIntelligenceProvider,
+    AzureDocumentIntelligenceProvider>();
 
 var app = builder.Build();
 
