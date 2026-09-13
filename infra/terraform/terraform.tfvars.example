@@ -1,0 +1,17 @@
+project_name = "intellidocs"
+environment  = "dev"
+location     = "germanywestcentral"
+
+postgresql_location            = "westeurope"
+postgresql_zone                = "3"
+postgresql_administrator_login = "intellidocsadmin"
+
+# Do not commit a real password.
+postgresql_administrator_password = "REPLACE_WITH_A_SECURE_PASSWORD"
+
+postgresql_sku_name   = "B_Standard_B1ms"
+postgresql_storage_mb = 32768
+
+tags = {
+  workload = "document-processing"
+}

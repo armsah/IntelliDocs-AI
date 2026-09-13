@@ -77,7 +77,7 @@ The target platform uses:
 - [x] P0 — Architecture and product definition
 - [x] P1 — Local API and PostgreSQL state machine
 - [x] P2 — Blob ingestion and duplicate detection
-- [ ] P3 — Azure infrastructure with Terraform
+- [x] P3 — Azure infrastructure with Terraform
 - [ ] P4 — Azure AI Document Intelligence integration
 - [ ] P5 — Service Bus worker, retries, DLQ and re-drive
 - [ ] P6 — Classification/extraction evaluation
@@ -90,53 +90,126 @@ The target platform uses:
 
 ## Current Phase
 
-**P2 — Azure Blob Storage ingestion and duplicate-safe content handling: complete**
+**P3 — Azure base infrastructure with Terraform: complete**
 
-P2 replaces temporary local filesystem storage with Blob Storage and establishes tenant-scoped, concurrency-safe duplicate detection.
+P3 introduces reproducible Azure infrastructure for the platform's base runtime and data services.
 
-Implemented through P2:
+Provisioned with Terraform:
 
-- ASP.NET Core multipart document upload
-- SHA-256 content hashing during ingestion
-- Azure Blob Storage abstraction and implementation
-- Azurite-backed Blob Storage for local development and integration testing
-- Deterministic blob naming using `{tenantId}/{documentId:N}/{fileName}`
-- Blob metadata containing `documentId`, `tenantId`, and `sha256`
-- Content type preservation in Blob Storage
-- Conditional blob creation to prevent accidental overwrite
-- PostgreSQL-backed durable document-processing state machine
-- Append-only document transition audit history
-- PostgreSQL as the authoritative source of document-job state
-- Tenant-scoped duplicate detection using `(tenantId, sha256)`
-- Unique PostgreSQL constraint as the final duplicate-concurrency guard
-- Database reservation before Blob upload so concurrent duplicate submissions cannot create duplicate blobs
-- Same document content permitted across different tenants
-- Document job and transition retrieval
-- Development-only state-transition endpoint
+- Azure Resource Group
+- Azure Storage Account
+- private `documents` Blob container
+- Azure Database for PostgreSQL Flexible Server 16
+- `intellidocs` PostgreSQL database
+- Log Analytics Workspace
+- Azure Container Apps Environment
+- deterministic project/environment naming with a random resource suffix
+- common resource tags
+- Terraform outputs for resource discovery
 
-The ingestion sequence reserves the `(tenantId, sha256)` document identity in PostgreSQL before uploading document bytes. A concurrent submission for the same tenant and content therefore loses at the database uniqueness boundary and returns HTTP 409 without creating another blob.
+The primary Azure region is `germanywestcentral`.
 
-A successfully stored document transitions from `Submitted` to `Stored` after Blob upload. If Blob storage fails after the database reservation, the `Submitted` job remains durable for later recovery rather than losing the ingestion attempt.
+Azure Database for PostgreSQL Flexible Server is provisioned in `westeurope`. During P3 validation, the subscription-specific PostgreSQL capability endpoint reported Flexible Server provisioning as restricted in Germany West Central, while West Europe supported the required PostgreSQL versions and SKU. The regional exception is therefore explicit in Terraform through `postgresql_location`.
 
-P2 integration tests verify:
+PostgreSQL currently uses:
 
-- uploaded bytes are persisted to Blob Storage
-- stored bytes can be downloaded unchanged
-- blob content type and metadata are preserved
-- the Blob URI is persisted in PostgreSQL
-- duplicate content within one tenant returns HTTP 409
-- a duplicate submission leaves exactly one database job and one blob
-- identical content across different tenants is accepted
-- concurrent duplicate submissions create exactly one document job and one blob
-- the P1 document lifecycle continues to operate with Blob-backed ingestion
+- PostgreSQL 16
+- `B_Standard_B1ms`
+- 32 GiB storage
+- availability zone `3`
+- 7-day backup retention
+- public network access for the current development phase
 
-Automated verification: **14 tests total, 14 passed, 0 failed**.
+Private networking is intentionally deferred to P10.
 
-Local development uses Azurite and development-only connection strings. Production Azure identity, secret management, and managed identity are introduced in P9.
+The Container Apps Environment is connected to the Log Analytics Workspace and explicitly declares its Consumption workload profile so the configuration converges without provider/API drift.
+
+### P3 Terraform Validation
+
+P3 was verified through a complete create, convergence, destroy, and recreate cycle.
+
+Validation evidence:
+
+- `terraform fmt` completed successfully
+- `terraform validate` reported a valid configuration
+- initial Terraform deployment succeeded
+- post-apply Terraform plan converged to no changes
+- all Terraform-managed resources were destroyed
+- Terraform state was verified empty
+- the Azure resource group was verified deleted
+- a new plan from zero reported `8 to add, 0 to change, 0 to destroy`
+- recreation completed with `8 added, 0 changed, 0 destroyed`
+- the recreated state contains all eight expected Terraform resources
+- the final Terraform plan reported no changes
+
+This demonstrates that the P3 Azure environment can be recreated from zero from the committed Terraform configuration.
+
+Terraform provider selections are captured in `.terraform.lock.hcl`. Local Terraform state, generated plan files, `.terraform/`, and real `.tfvars` files are excluded from Git.
 
 Next:
 
-**P3 — Azure infrastructure with Terraform**
+**P4 — Azure AI Document Intelligence integration**
+
+## Terraform
+
+Terraform configuration is located in:
+
+```text
+infra/terraform/
+```
+
+Authenticate with Azure CLI and expose the active subscription to the AzureRM provider:
+
+```powershell
+az login
+$env:ARM_SUBSCRIPTION_ID = az account show --query id --output tsv
+```
+
+Provide the PostgreSQL administrator password through an environment variable rather than committing it:
+
+```powershell
+$env:TF_VAR_postgresql_administrator_password = "<secure-password>"
+```
+
+The value above is a placeholder. Replace it with a securely generated password; do not use the literal placeholder against an Azure environment.
+
+Initialize and validate the Terraform configuration:
+
+```powershell
+terraform -chdir="infra\terraform" init
+terraform -chdir="infra\terraform" fmt -check -recursive
+terraform -chdir="infra\terraform" validate
+```
+
+Review the infrastructure execution plan:
+
+```powershell
+terraform -chdir="infra\terraform" plan
+```
+
+Apply the infrastructure:
+
+```powershell
+terraform -chdir="infra\terraform" apply
+```
+
+After applying, verify convergence:
+
+```powershell
+terraform -chdir="infra\terraform" plan
+```
+
+A converged environment should report no infrastructure changes.
+
+Destroy the development environment when required:
+
+```powershell
+terraform -chdir="infra\terraform" destroy
+```
+
+`terraform.tfvars.example` documents supported configuration values without containing real credentials.
+
+P3 intentionally uses local Terraform state. Generated state files, plan files, `.terraform/`, and real `.tfvars` files must remain outside version control. Remote state and CI/CD hardening can be introduced in a later infrastructure phase.
 
 ## Local Development
 
@@ -151,3 +224,13 @@ Start the local dependencies:
 ```powershell
 docker compose up -d
 ```
+
+The local development stack provides PostgreSQL and Azurite for API and integration-test execution.
+
+Run the complete automated test suite:
+
+```powershell
+dotnet test IntelliDocs.slnx
+```
+
+Current automated verification through P3: **14 tests total, 14 passed, 0 failed**.

@@ -37,3 +37,15 @@ artifacts/
 Thumbs.db
 
 tmp/
+
+# Terraform local state and secrets
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log
+crash.*.log
+
+# Terraform saved plans
+*.tfplan
