@@ -1,0 +1,37 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+
+# IDEs
+.vs/
+.idea/
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+appsettings.Development.local.json
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Tests / generated artifacts
+TestResults/
+coverage/
+artifacts/
+
+# OS
+.DS_Store
+Thumbs.db
