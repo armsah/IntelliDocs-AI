@@ -75,7 +75,7 @@ The target platform uses:
 ## Implementation Roadmap
 
 - [x] P0 — Architecture and product definition
-- [ ] P1 — Local API and PostgreSQL state machine
+- [x] P1 — Local API and PostgreSQL state machine
 - [ ] P2 — Blob ingestion and duplicate detection
 - [ ] P3 — Azure infrastructure with Terraform
 - [ ] P4 — Azure AI Document Intelligence integration
@@ -90,29 +90,53 @@ The target platform uses:
 
 ## Current Phase
 
-**P0 — Architecture and product definition: complete**
+**P1 — Local API and PostgreSQL state machine: complete**
 
-P0 establishes the product scope, document schemas, confidence policy, non-functional requirements, target architecture, processing sequence, durable state machine, and major architectural decisions.
+P1 establishes the first executable IntelliDocs document lifecycle using ASP.NET Core .NET 10, Entity Framework Core, and PostgreSQL 18.
+
+Implemented in P1:
+
+- Multipart document upload and persisted DocumentJob creation
+- SHA-256 content hashing
+- Explicit durable document-processing state machine
+- Append-only transition audit history
+- PostgreSQL as the source of truth for processing state
+- Temporary local filesystem document storage
+- Document job and transition retrieval
+- Development-only state-transition endpoint
+- EF Core migration for the initial persistence model
+- 8 unit tests and 2 PostgreSQL-backed integration tests
+
+Automated verification: **10 tests total, 10 passed, 0 failed**.
+
+SHA-256 is calculated in P1, but duplicate-safe ingestion is intentionally deferred to P2. Local filesystem storage is also temporary and will be replaced by Azure Blob Storage.
+
+The PostgreSQL credentials in ppsettings.Development.json are local Docker development credentials only. Production identity and secret management are introduced in P9.
 
 Next:
 
-**P1 — Local ASP.NET Core upload/job API + PostgreSQL state machine**
+**P2 — Azure Blob Storage ingestion and duplicate-safe content handling**
 
-P1 will establish an executable local application and prove the document lifecycle before Azure infrastructure is introduced.
+## Local Development
 
-## Repository Structure
+Prerequisites: .NET 10 SDK, Docker Desktop, and Docker Compose.
 
-```text
-.github/
-  workflows/
-docs/
-  adr/
-  architecture/
-  product/
-  security/
-evaluation/
-infrastructure/
-  terraform/
-scripts/
-src/
-tests/
+Start PostgreSQL with docker compose up -d.
+
+Apply migrations with dotnet ef database update --project src/IntelliDocs.Infrastructure --startup-project src/IntelliDocs.Api.
+
+Run the API with dotnet run --project src/IntelliDocs.Api.
+
+Run the complete automated test suite with dotnet test IntelliDocs.slnx.
+
+The local PostgreSQL instance is exposed on port 5433.
+
+### Local API
+
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| GET | /health | Service health |
+| POST | /api/v1/documents | Upload a document and create a persisted job |
+| GET | /api/v1/documents/{documentId} | Retrieve job state and transition history |
+| POST | /api/v1/documents/{documentId}/transitions | Development-only state-machine driver |
+

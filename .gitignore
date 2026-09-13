@@ -35,3 +35,8 @@ artifacts/
 # OS
 .DS_Store
 Thumbs.db
+
+# IntelliDocs local development storage
+src/IntelliDocs.Api/data/
+
+tmp/

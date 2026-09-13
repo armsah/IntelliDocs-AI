@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/IntelliDocs.Api/IntelliDocs.Api.csproj" />
+    <Project Path="src/IntelliDocs.Core/IntelliDocs.Core.csproj" />
+    <Project Path="src/IntelliDocs.Infrastructure/IntelliDocs.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/IntelliDocs.IntegrationTests/IntelliDocs.IntegrationTests.csproj" />
+    <Project Path="tests/IntelliDocs.UnitTests/IntelliDocs.UnitTests.csproj" />
+  </Folder>
+</Solution>
