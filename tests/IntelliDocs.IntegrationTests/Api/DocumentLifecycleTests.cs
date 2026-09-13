@@ -265,4 +265,3 @@ public sealed class DocumentLifecycleTests
         return options;
     }
 }
-

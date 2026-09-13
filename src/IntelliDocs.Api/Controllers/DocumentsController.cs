@@ -224,4 +224,3 @@ public sealed class DocumentsController : ControllerBase
                 .ToArray());
     }
 }
-

@@ -74,23 +74,23 @@ The target platform uses:
 
 ## Implementation Roadmap
 
-- [x] P0 — Architecture and product definition
-- [x] P1 — Local API and PostgreSQL state machine
-- [ ] P2 — Blob ingestion and duplicate detection
-- [ ] P3 — Azure infrastructure with Terraform
-- [ ] P4 — Azure AI Document Intelligence integration
-- [ ] P5 — Service Bus worker, retries, DLQ and re-drive
-- [ ] P6 — Classification/extraction evaluation
-- [ ] P7 — Confidence policy and business validation
-- [ ] P8 — Human-review portal
-- [ ] P9 — Entra ID, managed identity and Key Vault
-- [ ] P10 — Private-reference networking
-- [ ] P11 — Observability, AI quality and cost metrics
-- [ ] P12 — Load, failure and quality testing
+- [x] P0 â€” Architecture and product definition
+- [x] P1 â€” Local API and PostgreSQL state machine
+- [ ] P2 â€” Blob ingestion and duplicate detection
+- [ ] P3 â€” Azure infrastructure with Terraform
+- [ ] P4 â€” Azure AI Document Intelligence integration
+- [ ] P5 â€” Service Bus worker, retries, DLQ and re-drive
+- [ ] P6 â€” Classification/extraction evaluation
+- [ ] P7 â€” Confidence policy and business validation
+- [ ] P8 â€” Human-review portal
+- [ ] P9 â€” Entra ID, managed identity and Key Vault
+- [ ] P10 â€” Private-reference networking
+- [ ] P11 â€” Observability, AI quality and cost metrics
+- [ ] P12 â€” Load, failure and quality testing
 
 ## Current Phase
 
-**P1 — Local API and PostgreSQL state machine: complete**
+**P1 â€” Local API and PostgreSQL state machine: complete**
 
 P1 establishes the first executable IntelliDocs document lifecycle using ASP.NET Core .NET 10, Entity Framework Core, and PostgreSQL 18.
 
@@ -115,7 +115,7 @@ The PostgreSQL credentials in ppsettings.Development.json are local Docker deve
 
 Next:
 
-**P2 — Azure Blob Storage ingestion and duplicate-safe content handling**
+**P2 â€” Azure Blob Storage ingestion and duplicate-safe content handling**
 
 ## Local Development
 
@@ -139,4 +139,3 @@ The local PostgreSQL instance is exposed on port 5433.
 | POST | /api/v1/documents | Upload a document and create a persisted job |
 | GET | /api/v1/documents/{documentId} | Retrieve job state and transition history |
 | POST | /api/v1/documents/{documentId}/transitions | Development-only state-machine driver |
-

@@ -61,4 +61,3 @@ public sealed class DocumentJobTransitionConfiguration
                 "ix_document_job_transitions_document_time");
     }
 }
-
