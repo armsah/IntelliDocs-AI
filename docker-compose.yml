@@ -21,5 +21,26 @@ services:
       retries: 10
       start_period: 10s
 
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite
+    container_name: intellidocs-azurite
+    command:
+      - azurite
+      - --blobHost
+      - 0.0.0.0
+      - --queueHost
+      - 0.0.0.0
+      - --tableHost
+      - 0.0.0.0
+      - --location
+      - /data
+    ports:
+      - "10000:10000"
+      - "10001:10001"
+      - "10002:10002"
+    volumes:
+      - intellidocs-azurite-data:/data
+
 volumes:
   intellidocs-postgres-data:
+  intellidocs-azurite-data:

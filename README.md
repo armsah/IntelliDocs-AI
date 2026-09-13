@@ -76,7 +76,7 @@ The target platform uses:
 
 - [x] P0 — Architecture and product definition
 - [x] P1 — Local API and PostgreSQL state machine
-- [ ] P2 — Blob ingestion and duplicate detection
+- [x] P2 — Blob ingestion and duplicate detection
 - [ ] P3 — Azure infrastructure with Terraform
 - [ ] P4 — Azure AI Document Intelligence integration
 - [ ] P5 — Service Bus worker, retries, DLQ and re-drive
@@ -90,52 +90,64 @@ The target platform uses:
 
 ## Current Phase
 
-**P1 — Local API and PostgreSQL state machine: complete**
+**P2 — Azure Blob Storage ingestion and duplicate-safe content handling: complete**
 
-P1 establishes the first executable IntelliDocs document lifecycle using ASP.NET Core .NET 10, Entity Framework Core, and PostgreSQL 18.
+P2 replaces temporary local filesystem storage with Blob Storage and establishes tenant-scoped, concurrency-safe duplicate detection.
 
-Implemented in P1:
+Implemented through P2:
 
-- Multipart document upload and persisted DocumentJob creation
-- SHA-256 content hashing
-- Explicit durable document-processing state machine
-- Append-only transition audit history
-- PostgreSQL as the source of truth for processing state
-- Temporary local filesystem document storage
+- ASP.NET Core multipart document upload
+- SHA-256 content hashing during ingestion
+- Azure Blob Storage abstraction and implementation
+- Azurite-backed Blob Storage for local development and integration testing
+- Deterministic blob naming using `{tenantId}/{documentId:N}/{fileName}`
+- Blob metadata containing `documentId`, `tenantId`, and `sha256`
+- Content type preservation in Blob Storage
+- Conditional blob creation to prevent accidental overwrite
+- PostgreSQL-backed durable document-processing state machine
+- Append-only document transition audit history
+- PostgreSQL as the authoritative source of document-job state
+- Tenant-scoped duplicate detection using `(tenantId, sha256)`
+- Unique PostgreSQL constraint as the final duplicate-concurrency guard
+- Database reservation before Blob upload so concurrent duplicate submissions cannot create duplicate blobs
+- Same document content permitted across different tenants
 - Document job and transition retrieval
 - Development-only state-transition endpoint
-- EF Core migration for the initial persistence model
-- 8 unit tests and 2 PostgreSQL-backed integration tests
 
-Automated verification: **10 tests total, 10 passed, 0 failed**.
+The ingestion sequence reserves the `(tenantId, sha256)` document identity in PostgreSQL before uploading document bytes. A concurrent submission for the same tenant and content therefore loses at the database uniqueness boundary and returns HTTP 409 without creating another blob.
 
-SHA-256 is calculated in P1, but duplicate-safe ingestion is intentionally deferred to P2. Local filesystem storage is also temporary and will be replaced by Azure Blob Storage.
+A successfully stored document transitions from `Submitted` to `Stored` after Blob upload. If Blob storage fails after the database reservation, the `Submitted` job remains durable for later recovery rather than losing the ingestion attempt.
 
-The PostgreSQL credentials in ppsettings.Development.json are local Docker development credentials only. Production identity and secret management are introduced in P9.
+P2 integration tests verify:
+
+- uploaded bytes are persisted to Blob Storage
+- stored bytes can be downloaded unchanged
+- blob content type and metadata are preserved
+- the Blob URI is persisted in PostgreSQL
+- duplicate content within one tenant returns HTTP 409
+- a duplicate submission leaves exactly one database job and one blob
+- identical content across different tenants is accepted
+- concurrent duplicate submissions create exactly one document job and one blob
+- the P1 document lifecycle continues to operate with Blob-backed ingestion
+
+Automated verification: **14 tests total, 14 passed, 0 failed**.
+
+Local development uses Azurite and development-only connection strings. Production Azure identity, secret management, and managed identity are introduced in P9.
 
 Next:
 
-**P2 — Azure Blob Storage ingestion and duplicate-safe content handling**
+**P3 — Azure infrastructure with Terraform**
 
 ## Local Development
 
-Prerequisites: .NET 10 SDK, Docker Desktop, and Docker Compose.
+Prerequisites:
 
-Start PostgreSQL with docker compose up -d.
+- .NET 10 SDK
+- Docker Desktop
+- Docker Compose
 
-Apply migrations with dotnet ef database update --project src/IntelliDocs.Infrastructure --startup-project src/IntelliDocs.Api.
+Start the local dependencies:
 
-Run the API with dotnet run --project src/IntelliDocs.Api.
-
-Run the complete automated test suite with dotnet test IntelliDocs.slnx.
-
-The local PostgreSQL instance is exposed on port 5433.
-
-### Local API
-
-| Method | Endpoint | Purpose |
-| --- | --- | --- |
-| GET | /health | Service health |
-| POST | /api/v1/documents | Upload a document and create a persisted job |
-| GET | /api/v1/documents/{documentId} | Retrieve job state and transition history |
-| POST | /api/v1/documents/{documentId}/transitions | Development-only state-machine driver |
+```powershell
+docker compose up -d
+```

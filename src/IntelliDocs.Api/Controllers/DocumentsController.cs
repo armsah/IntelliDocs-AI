@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using IntelliDocs.Api.Models;
 using IntelliDocs.Core.Documents;
+using IntelliDocs.Core.Storage;
 using IntelliDocs.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -13,13 +14,16 @@ public sealed class DocumentsController : ControllerBase
 {
     private readonly IntelliDocsDbContext _dbContext;
     private readonly IWebHostEnvironment _environment;
+    private readonly IDocumentStorage _documentStorage;
 
     public DocumentsController(
         IntelliDocsDbContext dbContext,
-        IWebHostEnvironment environment)
+        IWebHostEnvironment environment,
+        IDocumentStorage documentStorage)
     {
         _dbContext = dbContext;
         _environment = environment;
+        _documentStorage = documentStorage;
     }
 
     [HttpPost]
@@ -57,56 +61,86 @@ public sealed class DocumentsController : ControllerBase
 
         var sha256 =
             Convert.ToHexString(hashBytes)
-                .ToLowerInvariant();
+                   .ToLowerInvariant();
+
+        var existingDocument =
+            await _dbContext.DocumentJobs
+                .AsNoTracking()
+                .SingleOrDefaultAsync(
+                    x =>
+                        x.TenantId == tenantId &&
+                        x.Sha256 == sha256,
+                    cancellationToken);
+
+        if (existingDocument is not null)
+        {
+            return Conflict(new
+            {
+                error = "Duplicate document content already exists for this tenant.",
+                documentId = existingDocument.DocumentId,
+                sha256 = existingDocument.Sha256
+            });
+        }
 
         var job = DocumentJob.Create(
             tenantId,
             safeFileName,
             sha256);
 
-        var relativeDirectory =
-            Path.Combine(
-                "data",
-                "uploads",
-                job.DocumentId.ToString("N"));
+        _dbContext.DocumentJobs.Add(job);
 
-        var absoluteDirectory =
-            Path.Combine(
-                _environment.ContentRootPath,
-                relativeDirectory);
-
-        Directory.CreateDirectory(absoluteDirectory);
-
-        var absoluteFilePath =
-            Path.Combine(
-                absoluteDirectory,
-                safeFileName);
-
-        await using (var destination =
-                     System.IO.File.Create(absoluteFilePath))
+        try
         {
-            await using var source = file.OpenReadStream();
-
-            await source.CopyToAsync(
-                destination,
+            await _dbContext.SaveChangesAsync(
                 cancellationToken);
         }
+        catch (DbUpdateException)
+        {
+            _dbContext.ChangeTracker.Clear();
 
-        var relativeFilePath =
-            Path.Combine(
-                    relativeDirectory,
-                    safeFileName)
-                .Replace('\\', '/');
+            var concurrentDuplicate =
+                await _dbContext.DocumentJobs
+                    .AsNoTracking()
+                    .SingleOrDefaultAsync(
+                        x =>
+                            x.TenantId == tenantId &&
+                            x.Sha256 == sha256,
+                        cancellationToken);
 
-        job.SetStorageUri(relativeFilePath);
+            if (concurrentDuplicate is null)
+            {
+                throw;
+            }
+
+            return Conflict(new
+            {
+                error = "Duplicate document content already exists for this tenant.",
+                documentId = concurrentDuplicate.DocumentId,
+                sha256 = concurrentDuplicate.Sha256
+            });
+        }
+
+        await using var documentStream =
+            file.OpenReadStream();
+
+        var storageResult =
+            await _documentStorage.StoreAsync(
+                new DocumentStorageRequest(
+                    job.DocumentId,
+                    tenantId,
+                    safeFileName,
+                    file.ContentType,
+                    sha256,
+                    documentStream),
+                cancellationToken);
+
+        job.SetStorageUri(storageResult.StorageUri);
 
         job.TransitionTo(
             DocumentStatus.Stored,
             "local-api",
             "storage",
-            "Document persisted to local development storage.");
-
-        _dbContext.DocumentJobs.Add(job);
+            "Document persisted to Azure Blob Storage.");
 
         await _dbContext.SaveChangesAsync(
             cancellationToken);

@@ -67,6 +67,7 @@ public sealed class DocumentJobConfiguration
                 x.TenantId,
                 x.Sha256
             })
+            .IsUnique()
             .HasDatabaseName(
                 "ix_document_jobs_tenant_sha256");
 

@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
+using Azure.Storage.Blobs;
 using IntelliDocs.Api.Models;
 using IntelliDocs.Core.Documents;
 using IntelliDocs.Infrastructure.Persistence;
@@ -29,6 +30,14 @@ public sealed class DocumentLifecycleTests
                     "Database=intellidocs;" +
                     "Username=intellidocs;" +
                     "Password=intellidocs_dev");
+
+                builder.UseSetting(
+                    "ConnectionStrings:BlobStorage",
+                    "UseDevelopmentStorage=true");
+
+                builder.UseSetting(
+                    "BlobStorage:ContainerName",
+                    "documents");
             });
     }
 
@@ -162,6 +171,421 @@ public sealed class DocumentLifecycleTests
     }
 
     [Fact]
+    public async Task Upload_PersistsDocumentInBlobStorage()
+    {
+        await ResetDatabaseAsync();
+
+        using var client = _factory.CreateClient();
+
+        var bytes =
+            Encoding.UTF8.GetBytes(
+                "IntelliDocs P2 blob integration document");
+
+        using var documentContent =
+            new ByteArrayContent(bytes);
+
+        documentContent.Headers.ContentType =
+            new System.Net.Http.Headers.MediaTypeHeaderValue(
+                "application/pdf");
+
+        using var form =
+            new MultipartFormDataContent();
+
+        form.Add(
+            new StringContent("tenant-blob"),
+            "tenantId");
+
+        form.Add(
+            documentContent,
+            "file",
+            "invoice-p2.pdf");
+
+        var uploadResponse =
+            await client.PostAsync(
+                "/api/v1/documents",
+                form);
+
+        Assert.Equal(
+            HttpStatusCode.Created,
+            uploadResponse.StatusCode);
+
+        var uploaded =
+            await uploadResponse.Content
+                .ReadFromJsonAsync<DocumentJobResponse>(
+                    JsonOptions());
+
+        Assert.NotNull(uploaded);
+
+        Assert.Equal(
+            DocumentStatus.Stored,
+            uploaded.ProcessingStatus);
+
+        using var scope =
+            _factory.Services.CreateScope();
+
+        var blobServiceClient =
+            scope.ServiceProvider
+                .GetRequiredService<BlobServiceClient>();
+
+        var container =
+            blobServiceClient.GetBlobContainerClient(
+                "documents");
+
+        var blobName =
+            $"tenant-blob/" +
+            $"{uploaded.DocumentId:N}/" +
+            "invoice-p2.pdf";
+
+        var blob =
+            container.GetBlobClient(blobName);
+
+        Assert.True(
+            await blob.ExistsAsync());
+
+        var properties =
+            await blob.GetPropertiesAsync();
+
+        Assert.Equal(
+            "application/pdf",
+            properties.Value.ContentType);
+
+        Assert.Equal(
+            uploaded.DocumentId.ToString(),
+            properties.Value.Metadata["documentId"]);
+
+        Assert.Equal(
+            "tenant-blob",
+            properties.Value.Metadata["tenantId"]);
+
+        Assert.Equal(
+            uploaded.Sha256,
+            properties.Value.Metadata["sha256"]);
+
+        var downloaded =
+            await blob.DownloadContentAsync();
+
+        Assert.Equal(
+            bytes,
+            downloaded.Value.Content.ToArray());
+
+        var dbContext =
+            scope.ServiceProvider
+                .GetRequiredService<IntelliDocsDbContext>();
+
+        var persisted =
+            await dbContext.DocumentJobs
+                .AsNoTracking()
+                .SingleAsync(
+                    x =>
+                        x.DocumentId ==
+                        uploaded.DocumentId);
+
+        Assert.Equal(
+            DocumentStatus.Stored,
+            persisted.ProcessingStatus);
+
+        Assert.Equal(
+            uploaded.Sha256,
+            persisted.Sha256);
+
+        Assert.Equal(
+            blob.Uri.ToString(),
+            persisted.OriginalStorageUri);
+    }
+
+    [Fact]
+    public async Task DuplicateContentWithinTenant_ReturnsConflict()
+    {
+        await ResetDatabaseAsync();
+
+        using var client = _factory.CreateClient();
+
+        var bytes =
+            Encoding.UTF8.GetBytes(
+                "IntelliDocs P2 duplicate document");
+
+        using var firstResponse =
+            await UploadDocumentAsync(
+                client,
+                "tenant-duplicate",
+                "first.pdf",
+                bytes);
+
+        Assert.Equal(
+            HttpStatusCode.Created,
+            firstResponse.StatusCode);
+
+        var first =
+            await firstResponse.Content
+                .ReadFromJsonAsync<DocumentJobResponse>(
+                    JsonOptions());
+
+        Assert.NotNull(first);
+
+        using var duplicateResponse =
+            await UploadDocumentAsync(
+                client,
+                "tenant-duplicate",
+                "second.pdf",
+                bytes);
+
+        Assert.Equal(
+            HttpStatusCode.Conflict,
+            duplicateResponse.StatusCode);
+
+        using var duplicateJson =
+            JsonDocument.Parse(
+                await duplicateResponse.Content
+                    .ReadAsStringAsync());
+
+        Assert.Equal(
+            first.DocumentId,
+            duplicateJson.RootElement
+                .GetProperty("documentId")
+                .GetGuid());
+
+        Assert.Equal(
+            first.Sha256,
+            duplicateJson.RootElement
+                .GetProperty("sha256")
+                .GetString());
+
+        using var scope =
+            _factory.Services.CreateScope();
+
+        var dbContext =
+            scope.ServiceProvider
+                .GetRequiredService<IntelliDocsDbContext>();
+
+        var jobCount =
+            await dbContext.DocumentJobs
+                .CountAsync(
+                    x =>
+                        x.TenantId == "tenant-duplicate" &&
+                        x.Sha256 == first.Sha256);
+
+        Assert.Equal(
+            1,
+            jobCount);
+
+        var blobServiceClient =
+            scope.ServiceProvider
+                .GetRequiredService<BlobServiceClient>();
+
+        var container =
+            blobServiceClient.GetBlobContainerClient(
+                "documents");
+
+        var blobCount = 0;
+
+        await foreach (
+            var _ in container.GetBlobsAsync(
+                Azure.Storage.Blobs.Models.BlobTraits.None,
+                Azure.Storage.Blobs.Models.BlobStates.None,
+                "tenant-duplicate/",
+                CancellationToken.None))
+        {
+            blobCount++;
+        }
+
+        Assert.Equal(
+            1,
+            blobCount);
+    }
+
+    [Fact]
+    public async Task SameContentAcrossDifferentTenants_IsAllowed()
+    {
+        await ResetDatabaseAsync();
+
+        using var client = _factory.CreateClient();
+
+        var bytes =
+            Encoding.UTF8.GetBytes(
+                "IntelliDocs P2 shared tenant document");
+
+        using var firstResponse =
+            await UploadDocumentAsync(
+                client,
+                "tenant-alpha",
+                "shared-alpha.pdf",
+                bytes);
+
+        using var secondResponse =
+            await UploadDocumentAsync(
+                client,
+                "tenant-beta",
+                "shared-beta.pdf",
+                bytes);
+
+        Assert.Equal(
+            HttpStatusCode.Created,
+            firstResponse.StatusCode);
+
+        Assert.Equal(
+            HttpStatusCode.Created,
+            secondResponse.StatusCode);
+
+        var first =
+            await firstResponse.Content
+                .ReadFromJsonAsync<DocumentJobResponse>(
+                    JsonOptions());
+
+        var second =
+            await secondResponse.Content
+                .ReadFromJsonAsync<DocumentJobResponse>(
+                    JsonOptions());
+
+        Assert.NotNull(first);
+        Assert.NotNull(second);
+
+        Assert.NotEqual(
+            first.DocumentId,
+            second.DocumentId);
+
+        Assert.Equal(
+            first.Sha256,
+            second.Sha256);
+
+        using var scope =
+            _factory.Services.CreateScope();
+
+        var dbContext =
+            scope.ServiceProvider
+                .GetRequiredService<IntelliDocsDbContext>();
+
+        var jobCount =
+            await dbContext.DocumentJobs
+                .CountAsync(
+                    x => x.Sha256 == first.Sha256);
+
+        Assert.Equal(
+            2,
+            jobCount);
+
+        var blobServiceClient =
+            scope.ServiceProvider
+                .GetRequiredService<BlobServiceClient>();
+
+        var container =
+            blobServiceClient.GetBlobContainerClient(
+                "documents");
+
+        var blobCount = 0;
+
+        await foreach (
+            var _ in container.GetBlobsAsync(
+                Azure.Storage.Blobs.Models.BlobTraits.None,
+                Azure.Storage.Blobs.Models.BlobStates.None,
+                null,
+                CancellationToken.None))
+        {
+            blobCount++;
+        }
+
+        Assert.Equal(
+            2,
+            blobCount);
+    }
+
+    [Fact]
+    public async Task ConcurrentDuplicateContentWithinTenant_CreatesOneDocument()
+    {
+        await ResetDatabaseAsync();
+
+        using var client = _factory.CreateClient();
+
+        var bytes =
+            Encoding.UTF8.GetBytes(
+                "IntelliDocs P2 concurrent duplicate");
+
+        var firstTask =
+            UploadDocumentAsync(
+                client,
+                "tenant-concurrent",
+                "first.pdf",
+                bytes);
+
+        var secondTask =
+            UploadDocumentAsync(
+                client,
+                "tenant-concurrent",
+                "second.pdf",
+                bytes);
+
+        var responses =
+            await Task.WhenAll(
+                firstTask,
+                secondTask);
+
+        try
+        {
+            Assert.Equal(
+                1,
+                responses.Count(
+                    x =>
+                        x.StatusCode ==
+                        HttpStatusCode.Created));
+
+            Assert.Equal(
+                1,
+                responses.Count(
+                    x =>
+                        x.StatusCode ==
+                        HttpStatusCode.Conflict));
+
+            using var scope =
+                _factory.Services.CreateScope();
+
+            var dbContext =
+                scope.ServiceProvider
+                    .GetRequiredService<IntelliDocsDbContext>();
+
+            var jobCount =
+                await dbContext.DocumentJobs
+                    .CountAsync(
+                        x =>
+                            x.TenantId ==
+                            "tenant-concurrent");
+
+            Assert.Equal(
+                1,
+                jobCount);
+
+            var blobServiceClient =
+                scope.ServiceProvider
+                    .GetRequiredService<BlobServiceClient>();
+
+            var container =
+                blobServiceClient.GetBlobContainerClient(
+                    "documents");
+
+            var blobCount = 0;
+
+            await foreach (
+                var _ in container.GetBlobsAsync(
+                    Azure.Storage.Blobs.Models.BlobTraits.None,
+                    Azure.Storage.Blobs.Models.BlobStates.None,
+                    "tenant-concurrent/",
+                    CancellationToken.None))
+            {
+                blobCount++;
+            }
+
+            Assert.Equal(
+                1,
+                blobCount);
+        }
+        finally
+        {
+            foreach (var response in responses)
+            {
+                response.Dispose();
+            }
+        }
+    }
+
+    [Fact]
     public async Task InvalidTransition_ReturnsConflict()
     {
         await ResetDatabaseAsync();
@@ -219,7 +643,7 @@ public sealed class DocumentLifecycleTests
     private async Task ResetDatabaseAsync()
     {
         using var scope =
-            _factory.Services.CreateScope();
+        _factory.Services.CreateScope();
 
         var dbContext =
             scope.ServiceProvider
@@ -232,6 +656,47 @@ public sealed class DocumentLifecycleTests
 
         await dbContext.DocumentJobs
             .ExecuteDeleteAsync();
+
+        var blobServiceClient =
+            scope.ServiceProvider
+                .GetRequiredService<BlobServiceClient>();
+
+        var container =
+            blobServiceClient.GetBlobContainerClient(
+                "documents");
+
+        await container.DeleteIfExistsAsync();
+    }
+
+    private static async Task<HttpResponseMessage>
+    UploadDocumentAsync(
+        HttpClient client,
+        string tenantId,
+        string fileName,
+        byte[] bytes)
+    {
+        using var content =
+            new ByteArrayContent(bytes);
+
+        content.Headers.ContentType =
+            new System.Net.Http.Headers.MediaTypeHeaderValue(
+                "application/pdf");
+
+        using var form =
+            new MultipartFormDataContent();
+
+        form.Add(
+            new StringContent(tenantId),
+            "tenantId");
+
+        form.Add(
+            content,
+            "file",
+            fileName);
+
+        return await client.PostAsync(
+            "/api/v1/documents",
+            form);
     }
 
     private static string StageFor(
