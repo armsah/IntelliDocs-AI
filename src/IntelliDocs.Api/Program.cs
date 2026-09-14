@@ -6,6 +6,8 @@ using IntelliDocs.Infrastructure.Storage;
 using Microsoft.EntityFrameworkCore;
 using IntelliDocs.Core.DocumentIntelligence;
 using IntelliDocs.Infrastructure.DocumentIntelligence;
+using IntelliDocs.Core.Messaging;
+using IntelliDocs.Infrastructure.Messaging;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -51,6 +53,14 @@ builder.Services.Configure<DocumentIntelligenceOptions>(
 builder.Services.AddSingleton<
     IDocumentIntelligenceProvider,
     AzureDocumentIntelligenceProvider>();
+
+builder.Services.Configure<ServiceBusOptions>(
+    builder.Configuration.GetSection(
+        ServiceBusOptions.SectionName));
+
+builder.Services.AddSingleton<
+    IDocumentProcessingPublisher,
+    AzureServiceBusDocumentProcessingPublisher>();
 
 var app = builder.Build();
 

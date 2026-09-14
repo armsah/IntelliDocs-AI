@@ -3,9 +3,13 @@
     <Project Path="src/IntelliDocs.Api/IntelliDocs.Api.csproj" />
     <Project Path="src/IntelliDocs.Core/IntelliDocs.Core.csproj" />
     <Project Path="src/IntelliDocs.Infrastructure/IntelliDocs.Infrastructure.csproj" />
+    <Project Path="src/IntelliDocs.Worker/IntelliDocs.Worker.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/IntelliDocs.IntegrationTests/IntelliDocs.IntegrationTests.csproj" />
     <Project Path="tests/IntelliDocs.UnitTests/IntelliDocs.UnitTests.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/IntelliDocs.ServiceBus.Redrive/IntelliDocs.ServiceBus.Redrive.csproj" />
   </Folder>
 </Solution>

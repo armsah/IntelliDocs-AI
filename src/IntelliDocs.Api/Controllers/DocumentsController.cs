@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using IntelliDocs.Api.Models;
 using IntelliDocs.Core.Documents;
+using IntelliDocs.Core.Messaging;
 using IntelliDocs.Core.Storage;
 using IntelliDocs.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
@@ -15,15 +16,20 @@ public sealed class DocumentsController : ControllerBase
     private readonly IntelliDocsDbContext _dbContext;
     private readonly IWebHostEnvironment _environment;
     private readonly IDocumentStorage _documentStorage;
+    private readonly IDocumentProcessingPublisher
+        _documentProcessingPublisher;
 
     public DocumentsController(
         IntelliDocsDbContext dbContext,
         IWebHostEnvironment environment,
-        IDocumentStorage documentStorage)
+        IDocumentStorage documentStorage,
+        IDocumentProcessingPublisher documentProcessingPublisher)
     {
         _dbContext = dbContext;
         _environment = environment;
         _documentStorage = documentStorage;
+        _documentProcessingPublisher =
+            documentProcessingPublisher;
     }
 
     [HttpPost]
@@ -50,9 +56,12 @@ public sealed class DocumentsController : ControllerBase
             });
         }
 
-        var safeFileName = Path.GetFileName(file.FileName);
+        var safeFileName =
+            Path.GetFileName(
+                file.FileName);
 
-        await using var inputStream = file.OpenReadStream();
+        await using var inputStream =
+            file.OpenReadStream();
 
         var hashBytes =
             await SHA256.HashDataAsync(
@@ -61,7 +70,7 @@ public sealed class DocumentsController : ControllerBase
 
         var sha256 =
             Convert.ToHexString(hashBytes)
-                   .ToLowerInvariant();
+                .ToLowerInvariant();
 
         var existingDocument =
             await _dbContext.DocumentJobs
@@ -76,18 +85,23 @@ public sealed class DocumentsController : ControllerBase
         {
             return Conflict(new
             {
-                error = "Duplicate document content already exists for this tenant.",
-                documentId = existingDocument.DocumentId,
-                sha256 = existingDocument.Sha256
+                error =
+                    "Duplicate document content already exists for this tenant.",
+                documentId =
+                    existingDocument.DocumentId,
+                sha256 =
+                    existingDocument.Sha256
             });
         }
 
-        var job = DocumentJob.Create(
-            tenantId,
-            safeFileName,
-            sha256);
+        var job =
+            DocumentJob.Create(
+                tenantId,
+                safeFileName,
+                sha256);
 
-        _dbContext.DocumentJobs.Add(job);
+        _dbContext.DocumentJobs.Add(
+            job);
 
         try
         {
@@ -114,9 +128,12 @@ public sealed class DocumentsController : ControllerBase
 
             return Conflict(new
             {
-                error = "Duplicate document content already exists for this tenant.",
-                documentId = concurrentDuplicate.DocumentId,
-                sha256 = concurrentDuplicate.Sha256
+                error =
+                    "Duplicate document content already exists for this tenant.",
+                documentId =
+                    concurrentDuplicate.DocumentId,
+                sha256 =
+                    concurrentDuplicate.Sha256
             });
         }
 
@@ -134,7 +151,8 @@ public sealed class DocumentsController : ControllerBase
                     documentStream),
                 cancellationToken);
 
-        job.SetStorageUri(storageResult.StorageUri);
+        job.SetStorageUri(
+            storageResult.StorageUri);
 
         job.TransitionTo(
             DocumentStatus.Stored,
@@ -145,11 +163,35 @@ public sealed class DocumentsController : ControllerBase
         await _dbContext.SaveChangesAsync(
             cancellationToken);
 
+        const string processingStage =
+            "layout-extraction";
+
+        job.TransitionTo(
+            DocumentStatus.Queued,
+            "local-api",
+            processingStage,
+            "Document queued for asynchronous layout extraction.");
+
+        await _dbContext.SaveChangesAsync(
+            cancellationToken);
+
+        var processingMessage =
+            new DocumentProcessingMessage(
+                job.DocumentId,
+                job.TenantId,
+                processingStage,
+                DateTimeOffset.UtcNow);
+
+        await _documentProcessingPublisher.PublishAsync(
+            processingMessage,
+            cancellationToken);
+
         return CreatedAtAction(
             nameof(GetById),
             new
             {
-                documentId = job.DocumentId
+                documentId =
+                    job.DocumentId
             },
             ToResponse(job));
     }
@@ -168,13 +210,18 @@ public sealed class DocumentsController : ControllerBase
             await _dbContext.DocumentJobs
                 .Include(x => x.Transitions)
                 .SingleOrDefaultAsync(
-                    x => x.DocumentId == documentId,
+                    x =>
+                        x.DocumentId ==
+                        documentId,
                     cancellationToken);
 
         if (job is null)
+        {
             return NotFound();
+        }
 
-        return Ok(ToResponse(job));
+        return Ok(
+            ToResponse(job));
     }
 
     [HttpPost("{documentId:guid}/transitions")]
@@ -192,11 +239,15 @@ public sealed class DocumentsController : ControllerBase
             await _dbContext.DocumentJobs
                 .Include(x => x.Transitions)
                 .SingleOrDefaultAsync(
-                    x => x.DocumentId == documentId,
+                    x =>
+                        x.DocumentId ==
+                        documentId,
                     cancellationToken);
 
         if (job is null)
+        {
             return NotFound();
+        }
 
         try
         {
@@ -210,23 +261,28 @@ public sealed class DocumentsController : ControllerBase
         {
             return Conflict(new
             {
-                error = exception.Message,
-                currentStatus = exception.CurrentStatus,
-                requestedStatus = exception.RequestedStatus
+                error =
+                    exception.Message,
+                currentStatus =
+                    exception.CurrentStatus,
+                requestedStatus =
+                    exception.RequestedStatus
             });
         }
         catch (ArgumentException exception)
         {
             return BadRequest(new
             {
-                error = exception.Message
+                error =
+                    exception.Message
             });
         }
 
         await _dbContext.SaveChangesAsync(
             cancellationToken);
 
-        return Ok(ToResponse(job));
+        return Ok(
+            ToResponse(job));
     }
 
     private static DocumentJobResponse ToResponse(
@@ -245,16 +301,19 @@ public sealed class DocumentsController : ControllerBase
             job.SubmittedAtUtc,
             job.CompletedAtUtc,
             job.Transitions
-                .OrderBy(x => x.OccurredAtUtc)
-                .Select(x =>
-                    new DocumentTransitionResponse(
-                        x.Id,
-                        x.PreviousStatus,
-                        x.NextStatus,
-                        x.OccurredAtUtc,
-                        x.Actor,
-                        x.ProcessingStage,
-                        x.Reason))
+                .OrderBy(
+                    x =>
+                        x.OccurredAtUtc)
+                .Select(
+                    x =>
+                        new DocumentTransitionResponse(
+                            x.Id,
+                            x.PreviousStatus,
+                            x.NextStatus,
+                            x.OccurredAtUtc,
+                            x.Actor,
+                            x.ProcessingStage,
+                            x.Reason))
                 .ToArray());
     }
 }

@@ -91,6 +91,80 @@ public sealed class AzureBlobDocumentStorage : IDocumentStorage
             properties.Value.ContentLength);
     }
 
+    public async Task<StoredDocumentContent> OpenReadAsync(
+    string storageUri,
+    CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(storageUri))
+        {
+            throw new ArgumentException(
+                "Storage URI is required.",
+                nameof(storageUri));
+        }
+
+        if (!Uri.TryCreate(
+                storageUri,
+                UriKind.Absolute,
+                out var blobUri))
+        {
+            throw new ArgumentException(
+                "Storage URI is invalid.",
+                nameof(storageUri));
+        }
+
+        var containerUri = _containerClient.Uri;
+
+        if (!string.Equals(
+                blobUri.Scheme,
+                containerUri.Scheme,
+                StringComparison.OrdinalIgnoreCase) ||
+            !string.Equals(
+                blobUri.Host,
+                containerUri.Host,
+                StringComparison.OrdinalIgnoreCase) ||
+            blobUri.Port != containerUri.Port)
+        {
+            throw new InvalidOperationException(
+                "Storage URI does not belong to the configured Blob Storage endpoint.");
+        }
+
+        var containerPath =
+            containerUri.AbsolutePath.TrimEnd('/');
+
+        var blobPath =
+            Uri.UnescapeDataString(blobUri.AbsolutePath);
+
+        if (!blobPath.StartsWith(
+                containerPath + "/",
+                StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException(
+                "Storage URI does not belong to the configured document container.");
+        }
+
+        var blobName =
+            blobPath[(containerPath.Length + 1)..];
+
+        if (string.IsNullOrWhiteSpace(blobName))
+        {
+            throw new InvalidOperationException(
+                "Storage URI does not identify a document blob.");
+        }
+
+        var blobClient =
+            _containerClient.GetBlobClient(blobName);
+
+        var response =
+            await blobClient.DownloadStreamingAsync(
+                cancellationToken: cancellationToken);
+
+        return new StoredDocumentContent(
+            response.Value.Content,
+            response.Value.Details.ContentType
+                ?? "application/octet-stream",
+            response.Value.Details.ContentLength);
+    }
+
     private static string BuildBlobName(
         DocumentStorageRequest request)
     {

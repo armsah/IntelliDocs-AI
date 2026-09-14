@@ -17,6 +17,9 @@ public sealed class IntelliDocsDbContext : DbContext
     public DbSet<DocumentJobTransition> DocumentJobTransitions =>
         Set<DocumentJobTransition>();
 
+    public DbSet<DocumentAnalysisRecord> DocumentAnalysisRecords =>
+        Set<DocumentAnalysisRecord>();
+
     protected override void OnModelCreating(
         ModelBuilder modelBuilder)
     {

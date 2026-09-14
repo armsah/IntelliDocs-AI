@@ -6,6 +6,9 @@ using Azure.Storage.Blobs;
 using IntelliDocs.Api.Models;
 using IntelliDocs.Core.Documents;
 using IntelliDocs.Infrastructure.Persistence;
+using IntelliDocs.Core.Messaging;
+using IntelliDocs.IntegrationTests.Messaging;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -38,6 +41,18 @@ public sealed class DocumentLifecycleTests
                 builder.UseSetting(
                     "BlobStorage:ContainerName",
                     "documents");
+
+                builder.ConfigureServices(services =>
+                {
+                    services.RemoveAll<IDocumentProcessingPublisher>();
+
+                    services.AddSingleton<FakeDocumentProcessingPublisher>();
+
+                    services.AddSingleton<IDocumentProcessingPublisher>(
+                        sp =>
+                            sp.GetRequiredService<
+                                FakeDocumentProcessingPublisher>());
+                });
             });
     }
 
@@ -85,7 +100,7 @@ public sealed class DocumentLifecycleTests
         Assert.NotNull(uploaded);
         Assert.NotEqual(Guid.Empty, uploaded.DocumentId);
         Assert.Equal(
-            DocumentStatus.Stored,
+            DocumentStatus.Queued,
             uploaded.ProcessingStatus);
         Assert.Equal(
             "tenant-integration",
@@ -97,7 +112,6 @@ public sealed class DocumentLifecycleTests
 
         var expectedLifecycle = new[]
         {
-            DocumentStatus.Queued,
             DocumentStatus.Processing,
             DocumentStatus.Extracted,
             DocumentStatus.Validating,
@@ -151,6 +165,13 @@ public sealed class DocumentLifecycleTests
         var dbContext =
             scope.ServiceProvider
                 .GetRequiredService<IntelliDocsDbContext>();
+
+        var publisher =
+            scope.ServiceProvider
+                .GetRequiredService<
+                    FakeDocumentProcessingPublisher>();
+
+        publisher.Clear();
 
         var persisted =
             await dbContext.DocumentJobs
@@ -217,7 +238,7 @@ public sealed class DocumentLifecycleTests
         Assert.NotNull(uploaded);
 
         Assert.Equal(
-            DocumentStatus.Stored,
+            DocumentStatus.Queued,
             uploaded.ProcessingStatus);
 
         using var scope =
@@ -281,7 +302,7 @@ public sealed class DocumentLifecycleTests
                         uploaded.DocumentId);
 
         Assert.Equal(
-            DocumentStatus.Stored,
+            DocumentStatus.Queued,
             persisted.ProcessingStatus);
 
         Assert.Equal(
@@ -586,6 +607,77 @@ public sealed class DocumentLifecycleTests
     }
 
     [Fact]
+    public async Task Upload_QueuesInitialLayoutExtractionMessage()
+    {
+        await ResetDatabaseAsync();
+
+        using var client =
+            _factory.CreateClient();
+
+        var bytes =
+            Encoding.UTF8.GetBytes(
+                "IntelliDocs P5 queue integration document");
+
+        using var response =
+            await UploadDocumentAsync(
+                client,
+                "tenant-queue",
+                "queue-document.pdf",
+                bytes);
+
+        Assert.Equal(
+            HttpStatusCode.Created,
+            response.StatusCode);
+
+        var uploaded =
+            await response.Content
+                .ReadFromJsonAsync<DocumentJobResponse>(
+                    JsonOptions());
+
+        Assert.NotNull(uploaded);
+
+        Assert.Equal(
+            DocumentStatus.Queued,
+            uploaded.ProcessingStatus);
+
+        using var scope =
+            _factory.Services.CreateScope();
+
+        var publisher =
+            scope.ServiceProvider
+                .GetRequiredService<
+                    FakeDocumentProcessingPublisher>();
+
+        var message =
+            Assert.Single(
+                publisher.Messages);
+
+        Assert.Equal(
+            uploaded.DocumentId,
+            message.DocumentId);
+
+        Assert.Equal(
+            "tenant-queue",
+            message.TenantId);
+
+        Assert.Equal(
+            "layout-extraction",
+            message.ProcessingStage);
+
+        Assert.Equal(
+            0,
+            message.RedriveCount);
+
+        Assert.Equal(
+            $"{uploaded.DocumentId:N}:layout-extraction",
+            message.IdempotencyKey);
+
+        Assert.Equal(
+            $"{uploaded.DocumentId:N}:layout-extraction:r0",
+            message.MessageId);
+    }
+
+    [Fact]
     public async Task InvalidTransition_ReturnsConflict()
     {
         await ResetDatabaseAsync();
@@ -650,6 +742,9 @@ public sealed class DocumentLifecycleTests
                 .GetRequiredService<IntelliDocsDbContext>();
 
         await dbContext.Database.MigrateAsync();
+
+        await dbContext.DocumentAnalysisRecords
+            .ExecuteDeleteAsync();
 
         await dbContext.DocumentJobTransitions
             .ExecuteDeleteAsync();

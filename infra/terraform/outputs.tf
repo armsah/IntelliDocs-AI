@@ -56,3 +56,18 @@ output "document_intelligence_endpoint" {
   description = "Azure AI Document Intelligence endpoint."
   value       = azurerm_cognitive_account.document_intelligence.endpoint
 }
+
+output "service_bus_namespace_name" {
+  description = "Azure Service Bus namespace name."
+  value       = azurerm_servicebus_namespace.main.name
+}
+
+output "service_bus_fully_qualified_namespace" {
+  description = "Azure Service Bus fully qualified namespace."
+  value       = "${azurerm_servicebus_namespace.main.name}.servicebus.windows.net"
+}
+
+output "service_bus_document_processing_queue_name" {
+  description = "Document processing Service Bus queue name."
+  value       = azurerm_servicebus_queue.document_processing.name
+}
