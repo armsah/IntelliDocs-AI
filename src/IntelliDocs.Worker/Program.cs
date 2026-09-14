@@ -1,5 +1,6 @@
 using Azure.Messaging.ServiceBus;
 using Azure.Storage.Blobs;
+using IntelliDocs.Core.DocumentClassification;
 using IntelliDocs.Core.DocumentIntelligence;
 using IntelliDocs.Core.Storage;
 using IntelliDocs.Infrastructure.DocumentIntelligence;
@@ -44,6 +45,10 @@ builder.Services.Configure<DocumentIntelligenceOptions>(
 builder.Services.AddSingleton<
     IDocumentIntelligenceProvider,
     AzureDocumentIntelligenceProvider>();
+
+builder.Services.AddSingleton<
+    IDocumentClassifier,
+    AzureDocumentClassifier>();
 
 builder.Services.Configure<ServiceBusOptions>(
     builder.Configuration.GetSection(

@@ -1,0 +1,281 @@
+{
+  "ModelId": "prebuilt-layout",
+  "ModelVersion": null,
+  "Content": "PURCHASE ORDER\nPurchase Order Number: PO-2026-5001 Order Date: 2026-09-14 Buyer: Example Manufacturing AG Supplier: Fictional Components GmbH Currency: EUR Item: Industrial Sensor Quantity: 10 Unit Price: 125.00 EUR Total Amount: 1,250.00 EUR\nSynthetic portfolio sample - no real customer data",
+  "Pages": [
+    {
+      "PageNumber": 1,
+      "Width": 1400,
+      "Height": 1800,
+      "Unit": "pixel",
+      "Lines": [
+        {
+          "Content": "PURCHASE ORDER",
+          "Polygon": [
+            84,
+            84,
+            442,
+            84,
+            442,
+            119,
+            84,
+            119
+          ]
+        },
+        {
+          "Content": "Purchase Order Number: PO-2026-5001",
+          "Polygon": [
+            82,
+            153,
+            573,
+            152,
+            573,
+            180,
+            82,
+            181
+          ]
+        },
+        {
+          "Content": "Order Date: 2026-09-14",
+          "Polygon": [
+            83,
+            201,
+            374,
+            200,
+            374,
+            227,
+            83,
+            228
+          ]
+        },
+        {
+          "Content": "Buyer: Example Manufacturing AG",
+          "Polygon": [
+            83,
+            249,
+            506,
+            248,
+            506,
+            278,
+            83,
+            279
+          ]
+        },
+        {
+          "Content": "Supplier: Fictional Components GmbH",
+          "Polygon": [
+            82,
+            296,
+            552,
+            296,
+            552,
+            326,
+            82,
+            327
+          ]
+        },
+        {
+          "Content": "Currency: EUR",
+          "Polygon": [
+            83,
+            345,
+            270,
+            345,
+            270,
+            373,
+            83,
+            374
+          ]
+        },
+        {
+          "Content": "Item: Industrial Sensor",
+          "Polygon": [
+            83,
+            393,
+            361,
+            393,
+            361,
+            420,
+            83,
+            420
+          ]
+        },
+        {
+          "Content": "Quantity: 10",
+          "Polygon": [
+            83,
+            441,
+            233,
+            440,
+            233,
+            470,
+            83,
+            470
+          ]
+        },
+        {
+          "Content": "Unit Price: 125.00 EUR",
+          "Polygon": [
+            83,
+            488,
+            369,
+            488,
+            369,
+            516,
+            83,
+            516
+          ]
+        },
+        {
+          "Content": "Total Amount: 1,250.00 EUR",
+          "Polygon": [
+            83,
+            536,
+            435,
+            535,
+            435,
+            564,
+            83,
+            565
+          ]
+        },
+        {
+          "Content": "Synthetic portfolio sample - no real customer data",
+          "Polygon": [
+            82,
+            632,
+            689,
+            632,
+            689,
+            662,
+            82,
+            663
+          ]
+        }
+      ]
+    }
+  ],
+  "Fields": [
+    {
+      "Name": "buyerName",
+      "Content": "Example Manufacturing AG",
+      "Confidence": 0.9950000047683716,
+      "BoundingRegions": [
+        {
+          "PageNumber": 1,
+          "Polygon": [
+            172,
+            248,
+            507,
+            247,
+            507,
+            278,
+            172,
+            279
+          ]
+        }
+      ]
+    },
+    {
+      "Name": "currency",
+      "Content": "EUR",
+      "Confidence": 0.9950000047683716,
+      "BoundingRegions": [
+        {
+          "PageNumber": 1,
+          "Polygon": [
+            212,
+            345,
+            270,
+            345,
+            270,
+            373,
+            212,
+            374
+          ]
+        }
+      ]
+    },
+    {
+      "Name": "orderDate",
+      "Content": "2026-09-14",
+      "Confidence": 0.9950000047683716,
+      "BoundingRegions": [
+        {
+          "PageNumber": 1,
+          "Polygon": [
+            236,
+            201,
+            375,
+            200,
+            375,
+            227,
+            236,
+            228
+          ]
+        }
+      ]
+    },
+    {
+      "Name": "purchaseOrderNumber",
+      "Content": "PO-2026-5001",
+      "Confidence": 0.9950000047683716,
+      "BoundingRegions": [
+        {
+          "PageNumber": 1,
+          "Polygon": [
+            398,
+            152,
+            574,
+            152,
+            574,
+            180,
+            398,
+            180
+          ]
+        }
+      ]
+    },
+    {
+      "Name": "supplierName",
+      "Content": "Fictional Components GmbH",
+      "Confidence": 0.9950000047683716,
+      "BoundingRegions": [
+        {
+          "PageNumber": 1,
+          "Polygon": [
+            200,
+            296,
+            552,
+            296,
+            552,
+            327,
+            200,
+            327
+          ]
+        }
+      ]
+    },
+    {
+      "Name": "totalAmount",
+      "Content": "1,250.00 EUR",
+      "Confidence": 0.9950000047683716,
+      "BoundingRegions": [
+        {
+          "PageNumber": 1,
+          "Polygon": [
+            265,
+            535,
+            436,
+            535,
+            436,
+            565,
+            265,
+            565
+          ]
+        }
+      ]
+    }
+  ],
+  "Tables": []
+}

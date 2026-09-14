@@ -1,0 +1,134 @@
+{
+  "ModelId": "prebuilt-layout",
+  "ModelVersion": null,
+  "Content": "DELIVERY NOTE\nDelivery Note Number: DN-2026-7001 Delivery Date: 2026-09-14 Supplier: Fictional Components GmbH Customer: Example Manufacturing AG Purchase Order: PO-2026-5001\nItem: Industrial Sensor Quantity Delivered: 10\nSynthetic portfolio sample - no real customer data",
+  "Pages": [
+    {
+      "PageNumber": 1,
+      "Width": 1400,
+      "Height": 1800,
+      "Unit": "pixel",
+      "Lines": [
+        {
+          "Content": "DELIVERY NOTE",
+          "Polygon": [
+            85,
+            84,
+            387,
+            83,
+            387,
+            119,
+            85,
+            120
+          ]
+        },
+        {
+          "Content": "Delivery Note Number: DN-2026-7001",
+          "Polygon": [
+            83,
+            152,
+            547,
+            151,
+            547,
+            181,
+            83,
+            183
+          ]
+        },
+        {
+          "Content": "Delivery Date: 2026-09-14",
+          "Polygon": [
+            83,
+            201,
+            405,
+            199,
+            405,
+            229,
+            83,
+            231
+          ]
+        },
+        {
+          "Content": "Supplier: Fictional Components GmbH",
+          "Polygon": [
+            82,
+            248,
+            552,
+            247,
+            552,
+            278,
+            82,
+            280
+          ]
+        },
+        {
+          "Content": "Customer: Example Manufacturing AG",
+          "Polygon": [
+            83,
+            296,
+            554,
+            296,
+            554,
+            327,
+            83,
+            327
+          ]
+        },
+        {
+          "Content": "Purchase Order: PO-2026-5001",
+          "Polygon": [
+            83,
+            344,
+            468,
+            343,
+            468,
+            373,
+            83,
+            373
+          ]
+        },
+        {
+          "Content": "Item: Industrial Sensor",
+          "Polygon": [
+            83,
+            393,
+            361,
+            392,
+            361,
+            420,
+            83,
+            421
+          ]
+        },
+        {
+          "Content": "Quantity Delivered: 10",
+          "Polygon": [
+            83,
+            440,
+            356,
+            439,
+            356,
+            470,
+            83,
+            471
+          ]
+        },
+        {
+          "Content": "Synthetic portfolio sample - no real customer data",
+          "Polygon": [
+            82,
+            536,
+            689,
+            535,
+            689,
+            567,
+            82,
+            568
+          ]
+        }
+      ]
+    }
+  ],
+  "Fields": [],
+  "Tables": []
+}

@@ -87,7 +87,7 @@ Document processing state remains durable in PostgreSQL rather than being inferr
 - [x] P3 — Azure infrastructure with Terraform
 - [x] P4 — Azure AI Document Intelligence integration
 - [x] P5 — Service Bus worker, retries, DLQ and re-drive
-- [ ] P6 — Classification/extraction evaluation
+- [x] P6 — Classification/extraction evaluation
 - [ ] P7 — Confidence policy and business validation
 - [ ] P8 — Human-review portal
 - [ ] P9 — Entra ID, managed identity and Key Vault
@@ -97,11 +97,29 @@ Document processing state remains durable in PostgreSQL rather than being inferr
 
 ## Current Phase
 
-**P5 — Service Bus worker, retries, DLQ and re-drive: complete**
+**P6 — Classification/extraction evaluation: complete**
+
+P6 establishes evidence-driven classification and extraction routing for all five target document types.
+
+The runtime worker now classifies each document before selecting the Azure AI Document Intelligence extraction strategy:
+
+- Invoice -> `prebuilt-invoice`
+- Purchase Order -> `prebuilt-layout` + query fields
+- Delivery Note -> `prebuilt-layout` + query fields
+- Contract -> `prebuilt-layout`
+- Form -> `prebuilt-layout`
+
+The custom classifier is `intellidocs-p6-classifier-v1`.
+
+Synthetic held-out classifier evaluation produced 10/10 correct classifications (100% synthetic holdout accuracy), with observed confidence approximately `0.760-0.818`.
+
+Those confidence values remain below the current `0.90` automatic-approval threshold. P7 therefore remains responsible for translating model confidence and business-rule results into deterministic approval or human-review decisions.
+
+The current P6 quality evidence is intentionally synthetic. It demonstrates implementation correctness and Azure integration, not representative production accuracy.
 
 Next:
 
-**P6 — Classification/extraction evaluation**
+**P7 — Confidence and business validation**
 
 ---
 
@@ -1076,6 +1094,316 @@ P5 therefore satisfies the phase exit criterion:
 
 ---
 
+## P6 — Classification and Extraction Evaluation
+
+P6 introduces evidence-driven document classification and extraction routing for the target IntelliDocs document types.
+
+Supported target types:
+
+- invoice
+- purchase order
+- delivery note
+- contract
+- form
+
+### Evaluation Harness
+
+P6 adds a reusable Python evaluation package under `evaluation/`.
+
+The harness evaluates classification accuracy, field extraction coverage, raw and normalized exact match, missing and unexpected fields, per-field and per-document-type quality, and confidence calibration.
+
+A dataset without classifier predictions is reported as classification **not evaluated**, rather than incorrectly receiving perfect classification accuracy.
+
+### Model Selection
+
+Evaluation showed that a custom extraction model is not currently justified for the synthetic P6 fixtures.
+
+| Document type | Classification | Extraction |
+| --- | --- | --- |
+| Invoice | Custom classifier | `prebuilt-invoice` |
+| Purchase Order | Custom classifier | `prebuilt-layout` + query fields |
+| Delivery Note | Custom classifier | `prebuilt-layout` + query fields |
+| Contract | Custom classifier | `prebuilt-layout` |
+| Form | Custom classifier | `prebuilt-layout` |
+
+Decision evidence is retained at `docs/evidence/p6/model-selection.md`.
+
+### Invoice Evaluation
+
+The synthetic P4 invoice baseline produced:
+
+```text
+field coverage:          0.9091
+raw exact match:         0.9091
+normalized exact match:  0.9091
+```
+
+The missing expected field was `currency`.
+
+Invoices therefore continue to use `prebuilt-invoice`; currency normalization and business validation are handled in P7.
+
+### Purchase Order Extraction
+
+Configured query fields:
+
+```text
+purchaseOrderNumber
+orderDate
+buyerName
+supplierName
+currency
+totalAmount
+```
+
+Observed synthetic evaluation:
+
+```text
+field coverage:          1.0000
+raw exact match:         1.0000
+normalized exact match:  1.0000
+missing fields:          0
+unexpected fields:       0
+average confidence:      ~0.995
+```
+
+Evidence:
+
+```text
+docs/evidence/p6/query-purchase-order.json
+docs/evidence/p6/purchase-order-query-report.json
+docs/evidence/p6/purchase-order-query-report.md
+```
+
+### Delivery Note Extraction
+
+Configured query fields:
+
+```text
+deliveryNoteNumber
+deliveryDate
+supplierName
+customerName
+```
+
+Observed synthetic evaluation:
+
+```text
+field coverage:          1.0000
+raw exact match:         1.0000
+normalized exact match:  1.0000
+missing fields:          0
+unexpected fields:       0
+average confidence:      ~0.995
+```
+
+Evidence:
+
+```text
+docs/evidence/p6/query-delivery-note.json
+docs/evidence/p6/delivery-note-query-report.json
+docs/evidence/p6/delivery-note-query-report.md
+```
+
+### Contract and Form Processing
+
+Contract and Form fixtures are processed through `prebuilt-layout`, providing the classification plus OCR/layout behavior required by the current product scope.
+
+### Custom Document Classifier
+
+P6 trains the Azure AI Document Intelligence classifier:
+
+```text
+intellidocs-p6-classifier-v1
+```
+
+Classes:
+
+```text
+invoice
+purchase_order
+delivery_note
+contract
+form
+```
+
+Training corpus:
+
+```text
+5 documents per class
+25 training documents total
+```
+
+Independent holdout corpus:
+
+```text
+2 documents per class
+10 holdout documents total
+```
+
+Holdout documents remain separate from classifier training inputs.
+
+### Classifier Training Preparation
+
+P6 includes:
+
+```text
+tools/generate-p6-classifier-fixtures.ps1
+tools/generate-p6-classifier-layout.ps1
+```
+
+Generated raw Layout companion JSON is reproducible training material and is not committed.
+
+### Classifier Infrastructure
+
+Terraform adds the private Blob container `classifier-training`.
+
+After P6, the Terraform-managed environment contains twelve resources.
+
+Development-time data-plane access used Azure RBAC and user-delegation SAS generation. Managed application identity and final secret handling remain P9 responsibilities.
+
+### Classifier Training and Evaluation Utilities
+
+Training utility:
+
+```text
+tools/IntelliDocs.DocumentClassifier.Train/
+```
+
+Evaluation utility:
+
+```text
+tools/IntelliDocs.DocumentClassifier.Evaluate/
+```
+
+Sanitized evidence:
+
+```text
+docs/evidence/p6/classifier-build.json
+docs/evidence/p6/classifier-holdout-results.json
+```
+
+Observed synthetic holdout result:
+
+```text
+correct:   10
+total:     10
+accuracy:  1.0000
+confidence range: approximately 0.760-0.818
+```
+
+The 100% synthetic result demonstrates correct integration and class separation for the controlled fixtures. It is not presented as representative production accuracy.
+
+### Runtime Worker Integration
+
+P6 integrates classification into the Service Bus worker.
+
+The runtime path is now:
+
+```text
+Service Bus message
+    |
+    v
+Blob read
+    |
+    v
+Custom Document Classifier
+    |
+    v
+DocumentAnalysisRouter
+    |
+    +--> invoice -> prebuilt-invoice
+    +--> purchase_order -> prebuilt-layout + query fields
+    +--> delivery_note -> prebuilt-layout + query fields
+    +--> contract -> prebuilt-layout
+    +--> form -> prebuilt-layout
+```
+
+The classified type is persisted through `DocumentJob.DetectedType`.
+
+Classifier ID, classified type, classifier confidence, and normalized analysis are persisted together in the durable analysis JSON envelope.
+
+P5 retry, dead-letter, re-drive, settlement, and PostgreSQL-state semantics remain unchanged.
+
+### Query Fields
+
+P6 extends `DocumentAnalysisRequest` with optional query fields.
+
+The Azure provider enables the Document Intelligence `QueryFields` feature only when query fields are supplied.
+
+The sample runner now supports:
+
+```text
+invoice
+layout
+query
+```
+
+### P6 Automated Verification
+
+.NET verification:
+
+```text
+26 tests total
+26 passed
+0 failed
+```
+
+Python evaluation verification:
+
+```text
+21 tests total
+21 passed
+0 failed
+```
+
+Terraform validation completed successfully with:
+
+```text
+terraform fmt -check -recursive
+terraform validate
+```
+
+`git diff --check` reported no whitespace errors; remaining messages were LF/CRLF normalization warnings only.
+
+### Evidence Boundary
+
+All committed P6 document samples and classifier fixtures are synthetic and contain no real customer information.
+
+The current measurements establish implementation correctness, Azure service integration, routing behavior, evaluation-pipeline behavior, and controlled synthetic baselines.
+
+They do **not** establish representative production accuracy.
+
+A production-quality evaluation requires a sanitized, representative, held-out dataset covering realistic supplier/customer variation, layouts, scanners, image quality, languages, multi-page documents, missing fields, ambiguous documents, and previously unseen templates.
+
+### P6 Exit Criteria
+
+P6 demonstrates:
+
+- reusable classification/extraction evaluation tooling
+- normalized field-level quality metrics
+- confidence calibration metrics
+- real Azure query-field extraction
+- evidence-driven model selection
+- five-class custom Document Intelligence classification
+- isolated training and holdout fixtures
+- 10/10 synthetic held-out classification
+- structured Purchase Order extraction
+- structured Delivery Note extraction
+- continued prebuilt Invoice extraction
+- Contract and Form OCR/layout processing
+- classifier-driven worker routing
+- durable classified document type and classifier confidence
+- no custom extraction model where evidence does not justify one
+- explicit synthetic-vs-production evidence boundary
+- Terraform-managed classifier training storage
+- preservation of P5 retry/DLQ behavior
+
+P6 therefore satisfies the phase exit criterion:
+
+> Target document types are supported through evidence-driven classification and extraction routing.
+
+---
+
 ## Terraform
 
 Terraform configuration is located in:
@@ -1136,7 +1464,7 @@ terraform -chdir="infra\terraform" destroy
 
 `terraform.tfvars.example` documents supported configuration values without containing real credentials.
 
-P3 through P5 intentionally use local Terraform state for development.
+P3 through P6 intentionally use local Terraform state for development.
 
 Generated state files, plan files, `.terraform/`, and real `.tfvars` files must remain outside version control.
 
@@ -1169,9 +1497,20 @@ Run the complete automated test suite:
 dotnet test IntelliDocs.slnx
 ```
 
-Current automated verification through P5:
+Current automated verification through P6:
 
-**20 tests total, 20 passed, 0 failed.**
+**.NET: 26 tests total, 26 passed, 0 failed.**
+
+Python evaluation:
+
+```powershell
+python -m unittest discover `
+    -s "evaluation\tests" `
+    -p "test*.py" `
+    -v
+```
+
+**Python evaluation: 21 tests total, 21 passed, 0 failed.**
 
 Build the Document Intelligence sample runner separately when required:
 
@@ -1249,19 +1588,22 @@ Development-stage public endpoints, local authentication, and API-key/connection
 
 ## Next Phase
 
-**P6 — Classification/extraction evaluation**
+**P7 — Confidence and business validation**
 
-P6 evaluates classification and structured extraction quality and determines whether custom Azure AI Document Intelligence models are justified by measured performance.
+P7 turns the classification and extraction confidence produced by P6 into explicit document-processing decisions.
 
-Planned P6 work includes:
+Planned work includes:
 
-- classification evaluation
-- field-level extraction evaluation
-- precision, recall, and exact-match metrics
-- confidence calibration analysis
-- error summaries
-- representative evaluation datasets
-- synthetic pipeline tests kept separate from real quality evaluation
-- evidence-based decision on custom classification or extraction models
+- field-level confidence policy
+- document-level confidence policy
+- mandatory-field validation
+- typed monetary and date validation
+- invoice total and tax consistency checks
+- Purchase Order business rules
+- Delivery Note business rules
+- unsupported and ambiguous classification handling
+- automatic approval for sufficiently confident valid documents
+- `NeedsReview` routing for low-confidence or conflicting results
+- validation evidence and deterministic failure cases
 
-The objective is to make the custom-model decision from measured quality evidence rather than introducing custom AI models prematurely.
+The objective is to convert AI output into deterministic business decisions rather than treating model confidence as sufficient on its own.

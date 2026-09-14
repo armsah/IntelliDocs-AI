@@ -1,0 +1,87 @@
+{
+  "classifierId": "intellidocs-p6-classifier-v1",
+  "dataset": {
+    "kind": "synthetic-holdout",
+    "documents": 10,
+    "documentsPerClass": 2,
+    "uploadedToTrainingContainer": false
+  },
+  "summary": {
+    "correct": 10,
+    "total": 10,
+    "accuracy": 1
+  },
+  "results": [
+    {
+      "file": "contract/contract-holdout-01.png",
+      "expectedType": "contract",
+      "predictedType": "contract",
+      "confidence": 0.802,
+      "correct": true
+    },
+    {
+      "file": "contract/contract-holdout-02.png",
+      "expectedType": "contract",
+      "predictedType": "contract",
+      "confidence": 0.811,
+      "correct": true
+    },
+    {
+      "file": "delivery_note/delivery_note-holdout-01.png",
+      "expectedType": "delivery_note",
+      "predictedType": "delivery_note",
+      "confidence": 0.76,
+      "correct": true
+    },
+    {
+      "file": "delivery_note/delivery_note-holdout-02.png",
+      "expectedType": "delivery_note",
+      "predictedType": "delivery_note",
+      "confidence": 0.768,
+      "correct": true
+    },
+    {
+      "file": "form/form-holdout-01.png",
+      "expectedType": "form",
+      "predictedType": "form",
+      "confidence": 0.818,
+      "correct": true
+    },
+    {
+      "file": "form/form-holdout-02.png",
+      "expectedType": "form",
+      "predictedType": "form",
+      "confidence": 0.767,
+      "correct": true
+    },
+    {
+      "file": "invoice/invoice-holdout-01.png",
+      "expectedType": "invoice",
+      "predictedType": "invoice",
+      "confidence": 0.795,
+      "correct": true
+    },
+    {
+      "file": "invoice/invoice-holdout-02.png",
+      "expectedType": "invoice",
+      "predictedType": "invoice",
+      "confidence": 0.788,
+      "correct": true
+    },
+    {
+      "file": "purchase_order/purchase_order-holdout-01.png",
+      "expectedType": "purchase_order",
+      "predictedType": "purchase_order",
+      "confidence": 0.771,
+      "correct": true
+    },
+    {
+      "file": "purchase_order/purchase_order-holdout-02.png",
+      "expectedType": "purchase_order",
+      "predictedType": "purchase_order",
+      "confidence": 0.803,
+      "correct": true
+    }
+  ],
+  "note": "Synthetic held-out integration evidence; not representative production-quality accuracy."
+}

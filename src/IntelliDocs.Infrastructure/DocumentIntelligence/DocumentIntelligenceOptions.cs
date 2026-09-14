@@ -7,4 +7,7 @@ public sealed class DocumentIntelligenceOptions
     public string Endpoint { get; set; } = string.Empty;
 
     public string ApiKey { get; set; } = string.Empty;
+
+    public string ClassifierId { get; set; } =
+        "intellidocs-p6-classifier-v1";
 }

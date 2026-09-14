@@ -1,0 +1,88 @@
+﻿{
+  "datasetName": "p6-synthetic-pipeline",
+  "purpose": "Evaluation pipeline verification only",
+  "documents": [
+    {
+      "documentId": "synthetic-invoice-001",
+      "expectedType": "invoice",
+      "predictedType": "invoice",
+      "classificationConfidence": 0.98,
+      "expectedFields": [
+        {
+          "name": "invoiceNumber",
+          "value": "INV-2026-1001",
+          "required": true
+        },
+        {
+          "name": "totalAmount",
+          "value": "1.234,56 €",
+          "required": true
+        }
+      ],
+      "predictedFields": [
+        {
+          "name": "invoiceNumber",
+          "value": "INV 2026 1001",
+          "confidence": 0.97
+        },
+        {
+          "name": "totalAmount",
+          "value": "1234.56",
+          "confidence": 0.95
+        }
+      ]
+    },
+    {
+      "documentId": "synthetic-po-001",
+      "expectedType": "purchase_order",
+      "predictedType": "purchase_order",
+      "classificationConfidence": 0.91,
+      "expectedFields": [
+        {
+          "name": "purchaseOrderNumber",
+          "value": "PO-44001",
+          "required": true
+        }
+      ],
+      "predictedFields": [
+        {
+          "name": "purchaseOrderNumber",
+          "value": "PO 44001",
+          "confidence": 0.93
+        }
+      ]
+    },
+    {
+      "documentId": "synthetic-delivery-001",
+      "expectedType": "delivery_note",
+      "predictedType": "delivery_note",
+      "classificationConfidence": 0.88,
+      "expectedFields": [
+        {
+          "name": "deliveryNoteNumber",
+          "value": "DN-9021",
+          "required": true
+        }
+      ],
+      "predictedFields": [
+        {
+          "name": "deliveryNoteNumber",
+          "value": "DN-9021",
+          "confidence": 0.90
+        }
+      ]
+    },
+    {
+      "documentId": "synthetic-contract-001",
+      "expectedType": "contract",
+      "predictedType": "contract",
+      "classificationConfidence": 0.87
+    },
+    {
+      "documentId": "synthetic-form-001",
+      "expectedType": "form",
+      "predictedType": "contract",
+      "classificationConfidence": 0.72
+    }
+  ]
+}

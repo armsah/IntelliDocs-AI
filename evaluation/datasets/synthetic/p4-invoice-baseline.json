@@ -1,0 +1,139 @@
+{
+  "datasetName": "p6-document-intelligence-extraction-baseline",
+  "purpose": "Extraction-only baseline comparing labeled ground truth with normalized Azure Document Intelligence output.",
+  "documents": [
+    {
+      "documentId": "p4-synthetic-invoice-001",
+      "expectedType": "invoice",
+      "expectedFields": [
+        {
+          "name": "invoiceNumber",
+          "value": "INV-2026-1001",
+          "required": true
+        },
+        {
+          "name": "invoiceDate",
+          "value": "2026-09-14",
+          "required": true
+        },
+        {
+          "name": "supplierName",
+          "value": "Fictional Supplier GmbH",
+          "required": true
+        },
+        {
+          "name": "customerName",
+          "value": "Example Customer AG",
+          "required": true
+        },
+        {
+          "name": "currency",
+          "value": "EUR",
+          "required": true
+        },
+        {
+          "name": "totalAmount",
+          "value": "1,190.00 EUR",
+          "required": true
+        },
+        {
+          "name": "supplierTaxId",
+          "value": "DE 123456789",
+          "required": false
+        },
+        {
+          "name": "subtotal",
+          "value": "1,000.00 EUR",
+          "required": false
+        },
+        {
+          "name": "taxAmount",
+          "value": "190.00 EUR",
+          "required": false
+        },
+        {
+          "name": "dueDate",
+          "value": "2026-10-14",
+          "required": false
+        },
+        {
+          "name": "purchaseOrderNumber",
+          "value": "PO-2026-0042",
+          "required": false
+        }
+      ],
+      "predictedFields": [
+        {
+          "name": "BillingAddress",
+          "value": "Testallee 25\n20095 Hamburg, Germany",
+          "confidence": 0.9010000228881836
+        },
+        {
+          "name": "BillingAddressRecipient",
+          "value": "Example Customer AG",
+          "confidence": 0.9279999732971191
+        },
+        {
+          "name": "customerName",
+          "value": "Example Customer AG",
+          "confidence": 0.9279999732971191
+        },
+        {
+          "name": "dueDate",
+          "value": "2026-10-14",
+          "confidence": 0.9819999933242798
+        },
+        {
+          "name": "invoiceDate",
+          "value": "2026-09-14",
+          "confidence": 0.9829999804496765
+        },
+        {
+          "name": "invoiceNumber",
+          "value": "INV-2026-1001",
+          "confidence": 0.9829999804496765
+        },
+        {
+          "name": "totalAmount",
+          "value": "1,190.00 EUR",
+          "confidence": 0.9380000233650208
+        },
+        {
+          "name": "purchaseOrderNumber",
+          "value": "PO-2026-0042",
+          "confidence": 0.9819999933242798
+        },
+        {
+          "name": "subtotal",
+          "value": "1,000.00 EUR",
+          "confidence": 0.9390000104904175
+        },
+        {
+          "name": "taxAmount",
+          "value": "190.00 EUR",
+          "confidence": 0.9380000233650208
+        },
+        {
+          "name": "VendorAddress",
+          "value": "Musterstrasse 10\n10115 Berlin, Germany",
+          "confidence": 0.8899999856948853
+        },
+        {
+          "name": "VendorAddressRecipient",
+          "value": "Fictional Supplier GmbH",
+          "confidence": 0.9160000085830688
+        },
+        {
+          "name": "supplierName",
+          "value": "Fictional Supplier GmbH",
+          "confidence": 0.9160000085830688
+        },
+        {
+          "name": "supplierTaxId",
+          "value": "DE 123456789",
+          "confidence": 0.746999979019165
+        }
+      ]
+    }
+  ]
+}

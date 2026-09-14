@@ -18,6 +18,11 @@ output "documents_container_name" {
   value       = azurerm_storage_container.documents.name
 }
 
+output "classifier_training_container_name" {
+  description = "Private Blob container used for Document Intelligence classifier training data."
+  value       = azurerm_storage_container.classifier_training.name
+}
+
 output "postgresql_server_name" {
   description = "Azure Database for PostgreSQL Flexible Server name."
   value       = azurerm_postgresql_flexible_server.main.name

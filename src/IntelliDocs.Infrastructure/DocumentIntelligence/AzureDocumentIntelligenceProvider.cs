@@ -47,11 +47,37 @@ public sealed class AzureDocumentIntelligenceProvider
 
         var modelId = GetModelId(request.Model);
 
+        var analyzeOptions =
+            new AnalyzeDocumentOptions(
+                modelId,
+                BinaryData.FromBytes(request.Content));
+
+        if (request.QueryFields is not null)
+        {
+            var queryFields =
+                request.QueryFields
+                    .Where(field =>
+                        !string.IsNullOrWhiteSpace(field))
+                    .Select(field => field.Trim())
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+
+            if (queryFields.Length > 0)
+            {
+                analyzeOptions.Features.Add(
+                    DocumentAnalysisFeature.QueryFields);
+
+                foreach (var queryField in queryFields)
+                {
+                    analyzeOptions.QueryFields.Add(queryField);
+                }
+            }
+        }
+
         var operation =
             await _client.AnalyzeDocumentAsync(
                 WaitUntil.Completed,
-                modelId,
-                BinaryData.FromBytes(request.Content),
+                analyzeOptions,
                 cancellationToken);
 
         return MapResult(

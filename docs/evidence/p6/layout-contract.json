@@ -1,0 +1,121 @@
+{
+  "ModelId": "prebuilt-layout",
+  "ModelVersion": null,
+  "Content": "SERVICE AGREEMENT\nContract Number: CTR-2026-3001\nEffective Date: 2026-09-14\nParty A: Example Manufacturing AG\nParty B: Fictional Services GmbH\nTerm: 12 months\nThe parties agree to fictional document processing services. This synthetic document contains no real customer data.",
+  "Pages": [
+    {
+      "PageNumber": 1,
+      "Width": 1400,
+      "Height": 1800,
+      "Unit": "pixel",
+      "Lines": [
+        {
+          "Content": "SERVICE AGREEMENT",
+          "Polygon": [
+            84,
+            84,
+            501,
+            83,
+            501,
+            119,
+            84,
+            119
+          ]
+        },
+        {
+          "Content": "Contract Number: CTR-2026-3001",
+          "Polygon": [
+            83,
+            152,
+            502,
+            151,
+            502,
+            180,
+            83,
+            181
+          ]
+        },
+        {
+          "Content": "Effective Date: 2026-09-14",
+          "Polygon": [
+            83,
+            200,
+            411,
+            200,
+            411,
+            228,
+            83,
+            228
+          ]
+        },
+        {
+          "Content": "Party A: Example Manufacturing AG",
+          "Polygon": [
+            82,
+            248,
+            525,
+            247,
+            525,
+            278,
+            82,
+            279
+          ]
+        },
+        {
+          "Content": "Party B: Fictional Services GmbH",
+          "Polygon": [
+            82,
+            295,
+            493,
+            295,
+            493,
+            326,
+            82,
+            326
+          ]
+        },
+        {
+          "Content": "Term: 12 months",
+          "Polygon": [
+            82,
+            344,
+            291,
+            344,
+            292,
+            372,
+            82,
+            372
+          ]
+        },
+        {
+          "Content": "The parties agree to fictional document processing services.",
+          "Polygon": [
+            82,
+            440,
+            813,
+            440,
+            813,
+            471,
+            82,
+            471
+          ]
+        },
+        {
+          "Content": "This synthetic document contains no real customer data.",
+          "Polygon": [
+            82,
+            488,
+            770,
+            487,
+            770,
+            518,
+            82,
+            518
+          ]
+        }
+      ]
+    }
+  ],
+  "Fields": [],
+  "Tables": []
+}

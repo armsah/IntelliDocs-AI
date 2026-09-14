@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Azure.Messaging.ServiceBus;
+using IntelliDocs.Core.DocumentClassification;
 using IntelliDocs.Core.DocumentIntelligence;
 using IntelliDocs.Core.Documents;
 using IntelliDocs.Core.Messaging;
@@ -18,6 +19,7 @@ public sealed class Worker : BackgroundService
     private readonly IDbContextFactory<IntelliDocsDbContext>
         _dbContextFactory;
     private readonly IDocumentStorage _documentStorage;
+    private readonly IDocumentClassifier _documentClassifier;
     private readonly IDocumentIntelligenceProvider
         _documentIntelligenceProvider;
     private readonly WorkerOptions _workerOptions;
@@ -30,6 +32,7 @@ public sealed class Worker : BackgroundService
         ServiceBusProcessor processor,
         IDbContextFactory<IntelliDocsDbContext> dbContextFactory,
         IDocumentStorage documentStorage,
+        IDocumentClassifier documentClassifier,
         IDocumentIntelligenceProvider documentIntelligenceProvider,
         IOptions<WorkerOptions> workerOptions,
         ILogger<Worker> logger)
@@ -37,6 +40,7 @@ public sealed class Worker : BackgroundService
         _processor = processor;
         _dbContextFactory = dbContextFactory;
         _documentStorage = documentStorage;
+        _documentClassifier = documentClassifier;
         _documentIntelligenceProvider =
             documentIntelligenceProvider;
         _workerOptions = workerOptions.Value;
@@ -181,24 +185,6 @@ public sealed class Worker : BackgroundService
             return;
         }
 
-        DocumentAnalysisModel model;
-
-        try
-        {
-            model =
-                ResolveAnalysisModel(
-                    message.ProcessingStage);
-        }
-        catch (ArgumentException exception)
-        {
-            await DeadLetterAsync(
-                args,
-                "UnsupportedProcessingStage",
-                exception.Message);
-
-            return;
-        }
-
         try
         {
             if (job.ProcessingStatus ==
@@ -252,6 +238,29 @@ public sealed class Worker : BackgroundService
                     "Stored document content is empty.");
             }
 
+            var classification =
+                await _documentClassifier
+                    .ClassifyAsync(
+                        new DocumentClassificationRequest(
+                            job.OriginalFileName,
+                            storedDocument.ContentType,
+                            content),
+                        args.CancellationToken);
+
+            var route =
+                DocumentAnalysisRouter.Resolve(
+                    classification.DocumentType);
+
+            _logger.LogInformation(
+                "Classified document {DocumentId} as {DocumentType} with confidence {Confidence:F4}; analysis model {AnalysisModel}.",
+                job.DocumentId,
+                classification.DocumentType,
+                classification.Confidence,
+                route.Model);
+
+            job.SetDocumentType(
+                classification.DocumentType);
+
             var analysis =
                 await _documentIntelligenceProvider
                     .AnalyzeAsync(
@@ -259,11 +268,18 @@ public sealed class Worker : BackgroundService
                             job.OriginalFileName,
                             storedDocument.ContentType,
                             content,
-                            model));
+                            route.Model,
+                            route.QueryFields),
+                        args.CancellationToken);
+
+            var processingResult =
+                new DocumentProcessingResult(
+                    classification,
+                    analysis);
 
             var resultJson =
                 JsonSerializer.Serialize(
-                    analysis,
+                    processingResult,
                     _jsonOptions);
 
             var existingAnalysis =
@@ -298,7 +314,7 @@ public sealed class Worker : BackgroundService
                     DocumentStatus.Extracted,
                     "service-bus-worker",
                     message.ProcessingStage,
-                    "Document Intelligence analysis completed and normalized extraction was persisted.");
+                    "Document classification and Document Intelligence extraction completed and were persisted.");
             }
 
             await dbContext
@@ -308,8 +324,10 @@ public sealed class Worker : BackgroundService
                 args.Message);
 
             _logger.LogInformation(
-                "Completed document {DocumentId}; Service Bus message {MessageId} settled successfully.",
+                "Completed document {DocumentId}; classified as {DocumentType} with confidence {Confidence:F4}; Service Bus message {MessageId} settled successfully.",
                 job.DocumentId,
+                classification.DocumentType,
+                classification.Confidence,
                 args.Message.MessageId);
         }
         catch (Exception exception)
@@ -447,32 +465,6 @@ public sealed class Worker : BackgroundService
             args.Message,
             reason,
             safeDescription);
-    }
-
-    private static DocumentAnalysisModel
-        ResolveAnalysisModel(
-            string processingStage)
-    {
-        return processingStage
-            .Trim()
-            .ToLowerInvariant()
-            switch
-        {
-            "invoice" =>
-                DocumentAnalysisModel.Invoice,
-
-            "invoice-extraction" =>
-                DocumentAnalysisModel.Invoice,
-
-            "layout" =>
-                DocumentAnalysisModel.Layout,
-
-            "layout-extraction" =>
-                DocumentAnalysisModel.Layout,
-
-            _ => throw new ArgumentException(
-                $"Unsupported processing stage '{processingStage}'.")
-        };
     }
 
     private static bool IsAlreadyProcessed(

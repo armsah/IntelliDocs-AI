@@ -1,22 +1,60 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using IntelliDocs.Core.DocumentIntelligence;
 using IntelliDocs.Infrastructure.DocumentIntelligence;
 using Microsoft.Extensions.Options;
 
-if (args.Length != 3)
+if (args.Length is < 3 or > 4)
 {
     Console.Error.WriteLine(
-        "Usage: <invoice|layout> <input-file> <output-json>");
+        "Usage: <invoice|layout|query> <input-file> <output-json> [comma-separated-query-fields]");
     return 1;
 }
 
-var model = args[0].ToLowerInvariant() switch
+var mode = args[0].ToLowerInvariant();
+
+var model = mode switch
 {
     "invoice" => DocumentAnalysisModel.Invoice,
     "layout" => DocumentAnalysisModel.Layout,
+    "query" => DocumentAnalysisModel.Layout,
     _ => throw new ArgumentException(
-        "Model must be 'invoice' or 'layout'.")
+        "Model must be 'invoice', 'layout', or 'query'.")
 };
+
+IReadOnlyList<string>? queryFields = null;
+
+if (mode == "query")
+{
+    if (args.Length != 4 ||
+        string.IsNullOrWhiteSpace(args[3]))
+    {
+        Console.Error.WriteLine(
+            "Query mode requires comma-separated query fields.");
+        return 1;
+    }
+
+    queryFields =
+        args[3]
+            .Split(
+                ',',
+                StringSplitOptions.RemoveEmptyEntries |
+                StringSplitOptions.TrimEntries)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+    if (queryFields.Count == 0)
+    {
+        Console.Error.WriteLine(
+            "At least one query field is required.");
+        return 1;
+    }
+}
+else if (args.Length != 3)
+{
+    Console.Error.WriteLine(
+        "Invoice and layout modes do not accept query fields.");
+    return 1;
+}
 
 var inputPath = Path.GetFullPath(args[1]);
 var outputPath = Path.GetFullPath(args[2]);
@@ -63,7 +101,8 @@ var request =
         Path.GetFileName(inputPath),
         GetContentType(inputPath),
         content,
-        model);
+        model,
+        queryFields);
 
 var result =
     await provider.AnalyzeAsync(request);
@@ -89,6 +128,13 @@ Console.WriteLine(
     $"Fields: {result.Fields.Count}");
 Console.WriteLine(
     $"Tables: {result.Tables.Count}");
+
+if (queryFields is not null)
+{
+    Console.WriteLine(
+        $"Query fields: {string.Join(", ", queryFields)}");
+}
+
 Console.WriteLine(
     $"Evidence: {outputPath}");
 

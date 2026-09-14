@@ -1,0 +1,61 @@
+﻿{
+  "documentId": "p4-synthetic-invoice-001",
+  "expectedType": "invoice",
+  "expectedFields": [
+    {
+      "name": "invoiceNumber",
+      "value": "INV-2026-1001",
+      "required": true
+    },
+    {
+      "name": "invoiceDate",
+      "value": "2026-09-14",
+      "required": true
+    },
+    {
+      "name": "supplierName",
+      "value": "Fictional Supplier GmbH",
+      "required": true
+    },
+    {
+      "name": "customerName",
+      "value": "Example Customer AG",
+      "required": true
+    },
+    {
+      "name": "currency",
+      "value": "EUR",
+      "required": true
+    },
+    {
+      "name": "totalAmount",
+      "value": "1,190.00 EUR",
+      "required": true
+    },
+    {
+      "name": "supplierTaxId",
+      "value": "DE 123456789",
+      "required": false
+    },
+    {
+      "name": "subtotal",
+      "value": "1,000.00 EUR",
+      "required": false
+    },
+    {
+      "name": "taxAmount",
+      "value": "190.00 EUR",
+      "required": false
+    },
+    {
+      "name": "dueDate",
+      "value": "2026-10-14",
+      "required": false
+    },
+    {
+      "name": "purchaseOrderNumber",
+      "value": "PO-2026-0042",
+      "required": false
+    }
+  ]
+}

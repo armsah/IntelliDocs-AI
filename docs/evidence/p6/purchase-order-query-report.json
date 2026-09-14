@@ -1,0 +1,185 @@
+{
+  "documentCount": 1,
+  "classification": {
+    "total": 0,
+    "correct": 0,
+    "accuracy": 0.0,
+    "labels": [],
+    "confusion_matrix": {},
+    "per_class": {}
+  },
+  "extraction": {
+    "expected_field_count": 6,
+    "predicted_field_count": 6,
+    "matched_field_count": 6,
+    "raw_exact_match_count": 6,
+    "normalized_exact_match_count": 6,
+    "missing_field_count": 0,
+    "unexpected_field_count": 0,
+    "raw_exact_match_rate": 1.0,
+    "normalized_exact_match_rate": 1.0,
+    "field_coverage": 1.0,
+    "fields": [
+      {
+        "document_id": "p6-synthetic-purchase-order-001",
+        "field_name": "purchaseOrderNumber",
+        "expected_value": "PO-2026-5001",
+        "predicted_value": "PO-2026-5001",
+        "raw_exact_match": true,
+        "normalized_exact_match": true,
+        "confidence": 0.9950000047683716,
+        "required": true
+      },
+      {
+        "document_id": "p6-synthetic-purchase-order-001",
+        "field_name": "orderDate",
+        "expected_value": "2026-09-14",
+        "predicted_value": "2026-09-14",
+        "raw_exact_match": true,
+        "normalized_exact_match": true,
+        "confidence": 0.9950000047683716,
+        "required": true
+      },
+      {
+        "document_id": "p6-synthetic-purchase-order-001",
+        "field_name": "buyerName",
+        "expected_value": "Example Manufacturing AG",
+        "predicted_value": "Example Manufacturing AG",
+        "raw_exact_match": true,
+        "normalized_exact_match": true,
+        "confidence": 0.9950000047683716,
+        "required": true
+      },
+      {
+        "document_id": "p6-synthetic-purchase-order-001",
+        "field_name": "supplierName",
+        "expected_value": "Fictional Components GmbH",
+        "predicted_value": "Fictional Components GmbH",
+        "raw_exact_match": true,
+        "normalized_exact_match": true,
+        "confidence": 0.9950000047683716,
+        "required": true
+      },
+      {
+        "document_id": "p6-synthetic-purchase-order-001",
+        "field_name": "currency",
+        "expected_value": "EUR",
+        "predicted_value": "EUR",
+        "raw_exact_match": true,
+        "normalized_exact_match": true,
+        "confidence": 0.9950000047683716,
+        "required": true
+      },
+      {
+        "document_id": "p6-synthetic-purchase-order-001",
+        "field_name": "totalAmount",
+        "expected_value": "1,250.00 EUR",
+        "predicted_value": "1,250.00 EUR",
+        "raw_exact_match": true,
+        "normalized_exact_match": true,
+        "confidence": 0.9950000047683716,
+        "required": true
+      }
+    ]
+  },
+  "classificationCalibration": {
+    "sample_count": 0,
+    "expected_calibration_error": 0.0,
+    "bins": []
+  },
+  "fieldCalibration": {
+    "sample_count": 6,
+    "expected_calibration_error": 0.004999995231628418,
+    "bins": [
+      {
+        "lower_bound": 0.9,
+        "upper_bound": 1.0,
+        "count": 6,
+        "average_confidence": 0.9950000047683716,
+        "accuracy": 1.0,
+        "calibration_error": 0.004999995231628418
+      }
+    ]
+  },
+  "fieldSummaries": {
+    "buyerName": {
+      "field_name": "buyerName",
+      "expected_count": 1,
+      "predicted_count": 1,
+      "matched_count": 1,
+      "normalized_correct_count": 1,
+      "missing_count": 0,
+      "normalized_accuracy": 1.0,
+      "coverage": 1.0,
+      "average_confidence": 0.9950000047683716
+    },
+    "currency": {
+      "field_name": "currency",
+      "expected_count": 1,
+      "predicted_count": 1,
+      "matched_count": 1,
+      "normalized_correct_count": 1,
+      "missing_count": 0,
+      "normalized_accuracy": 1.0,
+      "coverage": 1.0,
+      "average_confidence": 0.9950000047683716
+    },
+    "orderDate": {
+      "field_name": "orderDate",
+      "expected_count": 1,
+      "predicted_count": 1,
+      "matched_count": 1,
+      "normalized_correct_count": 1,
+      "missing_count": 0,
+      "normalized_accuracy": 1.0,
+      "coverage": 1.0,
+      "average_confidence": 0.9950000047683716
+    },
+    "purchaseOrderNumber": {
+      "field_name": "purchaseOrderNumber",
+      "expected_count": 1,
+      "predicted_count": 1,
+      "matched_count": 1,
+      "normalized_correct_count": 1,
+      "missing_count": 0,
+      "normalized_accuracy": 1.0,
+      "coverage": 1.0,
+      "average_confidence": 0.9950000047683716
+    },
+    "supplierName": {
+      "field_name": "supplierName",
+      "expected_count": 1,
+      "predicted_count": 1,
+      "matched_count": 1,
+      "normalized_correct_count": 1,
+      "missing_count": 0,
+      "normalized_accuracy": 1.0,
+      "coverage": 1.0,
+      "average_confidence": 0.9950000047683716
+    },
+    "totalAmount": {
+      "field_name": "totalAmount",
+      "expected_count": 1,
+      "predicted_count": 1,
+      "matched_count": 1,
+      "normalized_correct_count": 1,
+      "missing_count": 0,
+      "normalized_accuracy": 1.0,
+      "coverage": 1.0,
+      "average_confidence": 0.9950000047683716
+    }
+  },
+  "typeSummaries": {
+    "purchase_order": {
+      "document_type": "purchase_order",
+      "document_count": 1,
+      "classification_evaluated_count": 0,
+      "classification_correct": 0,
+      "classification_accuracy": null,
+      "expected_field_count": 6,
+      "normalized_correct_count": 6,
+      "field_coverage": 1.0,
+      "normalized_exact_match_rate": 1.0
+    }
+  }
+}

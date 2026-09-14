@@ -1,0 +1,143 @@
+{
+  "documentCount": 1,
+  "classification": {
+    "total": 0,
+    "correct": 0,
+    "accuracy": 0.0,
+    "labels": [],
+    "confusion_matrix": {},
+    "per_class": {}
+  },
+  "extraction": {
+    "expected_field_count": 4,
+    "predicted_field_count": 4,
+    "matched_field_count": 4,
+    "raw_exact_match_count": 4,
+    "normalized_exact_match_count": 4,
+    "missing_field_count": 0,
+    "unexpected_field_count": 0,
+    "raw_exact_match_rate": 1.0,
+    "normalized_exact_match_rate": 1.0,
+    "field_coverage": 1.0,
+    "fields": [
+      {
+        "document_id": "p6-synthetic-delivery-note-001",
+        "field_name": "deliveryNoteNumber",
+        "expected_value": "DN-2026-7001",
+        "predicted_value": "DN-2026-7001",
+        "raw_exact_match": true,
+        "normalized_exact_match": true,
+        "confidence": 0.9950000047683716,
+        "required": true
+      },
+      {
+        "document_id": "p6-synthetic-delivery-note-001",
+        "field_name": "deliveryDate",
+        "expected_value": "2026-09-14",
+        "predicted_value": "2026-09-14",
+        "raw_exact_match": true,
+        "normalized_exact_match": true,
+        "confidence": 0.9950000047683716,
+        "required": true
+      },
+      {
+        "document_id": "p6-synthetic-delivery-note-001",
+        "field_name": "supplierName",
+        "expected_value": "Fictional Components GmbH",
+        "predicted_value": "Fictional Components GmbH",
+        "raw_exact_match": true,
+        "normalized_exact_match": true,
+        "confidence": 0.9950000047683716,
+        "required": true
+      },
+      {
+        "document_id": "p6-synthetic-delivery-note-001",
+        "field_name": "customerName",
+        "expected_value": "Example Manufacturing AG",
+        "predicted_value": "Example Manufacturing AG",
+        "raw_exact_match": true,
+        "normalized_exact_match": true,
+        "confidence": 0.9950000047683716,
+        "required": true
+      }
+    ]
+  },
+  "classificationCalibration": {
+    "sample_count": 0,
+    "expected_calibration_error": 0.0,
+    "bins": []
+  },
+  "fieldCalibration": {
+    "sample_count": 4,
+    "expected_calibration_error": 0.004999995231628418,
+    "bins": [
+      {
+        "lower_bound": 0.9,
+        "upper_bound": 1.0,
+        "count": 4,
+        "average_confidence": 0.9950000047683716,
+        "accuracy": 1.0,
+        "calibration_error": 0.004999995231628418
+      }
+    ]
+  },
+  "fieldSummaries": {
+    "customerName": {
+      "field_name": "customerName",
+      "expected_count": 1,
+      "predicted_count": 1,
+      "matched_count": 1,
+      "normalized_correct_count": 1,
+      "missing_count": 0,
+      "normalized_accuracy": 1.0,
+      "coverage": 1.0,
+      "average_confidence": 0.9950000047683716
+    },
+    "deliveryDate": {
+      "field_name": "deliveryDate",
+      "expected_count": 1,
+      "predicted_count": 1,
+      "matched_count": 1,
+      "normalized_correct_count": 1,
+      "missing_count": 0,
+      "normalized_accuracy": 1.0,
+      "coverage": 1.0,
+      "average_confidence": 0.9950000047683716
+    },
+    "deliveryNoteNumber": {
+      "field_name": "deliveryNoteNumber",
+      "expected_count": 1,
+      "predicted_count": 1,
+      "matched_count": 1,
+      "normalized_correct_count": 1,
+      "missing_count": 0,
+      "normalized_accuracy": 1.0,
+      "coverage": 1.0,
+      "average_confidence": 0.9950000047683716
+    },
+    "supplierName": {
+      "field_name": "supplierName",
+      "expected_count": 1,
+      "predicted_count": 1,
+      "matched_count": 1,
+      "normalized_correct_count": 1,
+      "missing_count": 0,
+      "normalized_accuracy": 1.0,
+      "coverage": 1.0,
+      "average_confidence": 0.9950000047683716
+    }
+  },
+  "typeSummaries": {
+    "delivery_note": {
+      "document_type": "delivery_note",
+      "document_count": 1,
+      "classification_evaluated_count": 0,
+      "classification_correct": 0,
+      "classification_accuracy": null,
+      "expected_field_count": 4,
+      "normalized_correct_count": 4,
+      "field_coverage": 1.0,
+      "normalized_exact_match_rate": 1.0
+    }
+  }
+}

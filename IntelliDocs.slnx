@@ -10,6 +10,8 @@
     <Project Path="tests/IntelliDocs.UnitTests/IntelliDocs.UnitTests.csproj" />
   </Folder>
   <Folder Name="/tools/">
+    <Project Path="tools/IntelliDocs.DocumentClassifier.Evaluate/IntelliDocs.DocumentClassifier.Evaluate.csproj" />
+    <Project Path="tools/IntelliDocs.DocumentClassifier.Train/IntelliDocs.DocumentClassifier.Train.csproj" />
     <Project Path="tools/IntelliDocs.ServiceBus.Redrive/IntelliDocs.ServiceBus.Redrive.csproj" />
   </Folder>
 </Solution>

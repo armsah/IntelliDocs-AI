@@ -1,0 +1,121 @@
+{
+  "ModelId": "prebuilt-layout",
+  "ModelVersion": null,
+  "Content": "SUPPLIER REGISTRATION FORM\nForm Reference: FORM-2026-9001\nCompany Name: Fictional Supplier GmbH\nContact Name: Max Beispiel\nCountry: Germany\nPreferred Currency: EUR\nApproved: Yes\nSynthetic portfolio sample - no real customer data",
+  "Pages": [
+    {
+      "PageNumber": 1,
+      "Width": 1400,
+      "Height": 1800,
+      "Unit": "pixel",
+      "Lines": [
+        {
+          "Content": "SUPPLIER REGISTRATION FORM",
+          "Polygon": [
+            84,
+            83,
+            686,
+            83,
+            686,
+            119,
+            84,
+            120
+          ]
+        },
+        {
+          "Content": "Form Reference: FORM-2026-9001",
+          "Polygon": [
+            82,
+            153,
+            517,
+            151,
+            517,
+            180,
+            82,
+            181
+          ]
+        },
+        {
+          "Content": "Company Name: Fictional Supplier GmbH",
+          "Polygon": [
+            83,
+            201,
+            595,
+            200,
+            595,
+            230,
+            83,
+            231
+          ]
+        },
+        {
+          "Content": "Contact Name: Max Beispiel",
+          "Polygon": [
+            83,
+            248,
+            433,
+            248,
+            433,
+            278,
+            83,
+            278
+          ]
+        },
+        {
+          "Content": "Country: Germany",
+          "Polygon": [
+            83,
+            297,
+            309,
+            298,
+            309,
+            327,
+            83,
+            327
+          ]
+        },
+        {
+          "Content": "Preferred Currency: EUR",
+          "Polygon": [
+            82,
+            344,
+            391,
+            344,
+            392,
+            374,
+            82,
+            374
+          ]
+        },
+        {
+          "Content": "Approved: Yes",
+          "Polygon": [
+            81,
+            394,
+            264,
+            393,
+            264,
+            422,
+            81,
+            423
+          ]
+        },
+        {
+          "Content": "Synthetic portfolio sample - no real customer data",
+          "Polygon": [
+            82,
+            488,
+            690,
+            488,
+            690,
+            519,
+            82,
+            519
+          ]
+        }
+      ]
+    }
+  ],
+  "Fields": [],
+  "Tables": []
+}

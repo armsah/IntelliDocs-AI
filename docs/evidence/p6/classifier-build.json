@@ -1,0 +1,18 @@
+{
+  "classifierId": "intellidocs-p6-classifier-v1",
+  "createdOn": "2026-09-14T22:52:23+00:00",
+  "documentTypes": [
+    "contract",
+    "delivery_note",
+    "form",
+    "invoice",
+    "purchase_order"
+  ],
+  "trainingDataset": {
+    "kind": "synthetic",
+    "documentsPerClass": 5,
+    "totalDocuments": 25,
+    "holdoutDocumentsUsedForTraining": 0
+  },
+  "note": "Synthetic P6 integration evidence; not representative production-quality model evaluation."
+}

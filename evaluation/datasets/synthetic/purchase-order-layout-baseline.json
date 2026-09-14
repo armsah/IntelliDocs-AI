@@ -1,0 +1,43 @@
+{
+  "datasetName": "p6-document-intelligence-extraction-baseline",
+  "purpose": "Extraction-only baseline comparing labeled ground truth with normalized Azure Document Intelligence output.",
+  "documents": [
+    {
+      "documentId": "p6-synthetic-purchase-order-001",
+      "expectedType": "purchase_order",
+      "expectedFields": [
+        {
+          "name": "purchaseOrderNumber",
+          "value": "PO-2026-5001",
+          "required": true
+        },
+        {
+          "name": "orderDate",
+          "value": "2026-09-14",
+          "required": true
+        },
+        {
+          "name": "buyerName",
+          "value": "Example Manufacturing AG",
+          "required": true
+        },
+        {
+          "name": "supplierName",
+          "value": "Fictional Components GmbH",
+          "required": true
+        },
+        {
+          "name": "currency",
+          "value": "EUR",
+          "required": true
+        },
+        {
+          "name": "totalAmount",
+          "value": "1,250.00 EUR",
+          "required": true
+        }
+      ],
+      "predictedFields": []
+    }
+  ]
+}

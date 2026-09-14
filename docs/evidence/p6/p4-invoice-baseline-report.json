@@ -1,0 +1,342 @@
+{
+  "documentCount": 1,
+  "classification": {
+    "total": 0,
+    "correct": 0,
+    "accuracy": 0.0,
+    "labels": [],
+    "confusion_matrix": {},
+    "per_class": {}
+  },
+  "extraction": {
+    "expected_field_count": 11,
+    "predicted_field_count": 14,
+    "matched_field_count": 10,
+    "raw_exact_match_count": 10,
+    "normalized_exact_match_count": 10,
+    "missing_field_count": 1,
+    "unexpected_field_count": 4,
+    "raw_exact_match_rate": 0.9090909090909091,
+    "normalized_exact_match_rate": 0.9090909090909091,
+    "field_coverage": 0.9090909090909091,
+    "fields": [
+      {
+        "document_id": "p4-synthetic-invoice-001",
+        "field_name": "invoiceNumber",
+        "expected_value": "INV-2026-1001",
+        "predicted_value": "INV-2026-1001",
+        "raw_exact_match": true,
+        "normalized_exact_match": true,
+        "confidence": 0.9829999804496765,
+        "required": true
+      },
+      {
+        "document_id": "p4-synthetic-invoice-001",
+        "field_name": "invoiceDate",
+        "expected_value": "2026-09-14",
+        "predicted_value": "2026-09-14",
+        "raw_exact_match": true,
+        "normalized_exact_match": true,
+        "confidence": 0.9829999804496765,
+        "required": true
+      },
+      {
+        "document_id": "p4-synthetic-invoice-001",
+        "field_name": "supplierName",
+        "expected_value": "Fictional Supplier GmbH",
+        "predicted_value": "Fictional Supplier GmbH",
+        "raw_exact_match": true,
+        "normalized_exact_match": true,
+        "confidence": 0.9160000085830688,
+        "required": true
+      },
+      {
+        "document_id": "p4-synthetic-invoice-001",
+        "field_name": "customerName",
+        "expected_value": "Example Customer AG",
+        "predicted_value": "Example Customer AG",
+        "raw_exact_match": true,
+        "normalized_exact_match": true,
+        "confidence": 0.9279999732971191,
+        "required": true
+      },
+      {
+        "document_id": "p4-synthetic-invoice-001",
+        "field_name": "currency",
+        "expected_value": "EUR",
+        "predicted_value": null,
+        "raw_exact_match": false,
+        "normalized_exact_match": false,
+        "confidence": null,
+        "required": true
+      },
+      {
+        "document_id": "p4-synthetic-invoice-001",
+        "field_name": "totalAmount",
+        "expected_value": "1,190.00 EUR",
+        "predicted_value": "1,190.00 EUR",
+        "raw_exact_match": true,
+        "normalized_exact_match": true,
+        "confidence": 0.9380000233650208,
+        "required": true
+      },
+      {
+        "document_id": "p4-synthetic-invoice-001",
+        "field_name": "supplierTaxId",
+        "expected_value": "DE 123456789",
+        "predicted_value": "DE 123456789",
+        "raw_exact_match": true,
+        "normalized_exact_match": true,
+        "confidence": 0.746999979019165,
+        "required": false
+      },
+      {
+        "document_id": "p4-synthetic-invoice-001",
+        "field_name": "subtotal",
+        "expected_value": "1,000.00 EUR",
+        "predicted_value": "1,000.00 EUR",
+        "raw_exact_match": true,
+        "normalized_exact_match": true,
+        "confidence": 0.9390000104904175,
+        "required": false
+      },
+      {
+        "document_id": "p4-synthetic-invoice-001",
+        "field_name": "taxAmount",
+        "expected_value": "190.00 EUR",
+        "predicted_value": "190.00 EUR",
+        "raw_exact_match": true,
+        "normalized_exact_match": true,
+        "confidence": 0.9380000233650208,
+        "required": false
+      },
+      {
+        "document_id": "p4-synthetic-invoice-001",
+        "field_name": "dueDate",
+        "expected_value": "2026-10-14",
+        "predicted_value": "2026-10-14",
+        "raw_exact_match": true,
+        "normalized_exact_match": true,
+        "confidence": 0.9819999933242798,
+        "required": false
+      },
+      {
+        "document_id": "p4-synthetic-invoice-001",
+        "field_name": "purchaseOrderNumber",
+        "expected_value": "PO-2026-0042",
+        "predicted_value": "PO-2026-0042",
+        "raw_exact_match": true,
+        "normalized_exact_match": true,
+        "confidence": 0.9819999933242798,
+        "required": false
+      }
+    ]
+  },
+  "classificationCalibration": {
+    "sample_count": 0,
+    "expected_calibration_error": 0.0,
+    "bins": []
+  },
+  "fieldCalibration": {
+    "sample_count": 10,
+    "expected_calibration_error": 0.06640000343322756,
+    "bins": [
+      {
+        "lower_bound": 0.7,
+        "upper_bound": 0.8,
+        "count": 1,
+        "average_confidence": 0.746999979019165,
+        "accuracy": 1.0,
+        "calibration_error": 0.25300002098083496
+      },
+      {
+        "lower_bound": 0.9,
+        "upper_bound": 1.0,
+        "count": 9,
+        "average_confidence": 0.9543333318498399,
+        "accuracy": 1.0,
+        "calibration_error": 0.04566666815016007
+      }
+    ]
+  },
+  "fieldSummaries": {
+    "BillingAddress": {
+      "field_name": "BillingAddress",
+      "expected_count": 0,
+      "predicted_count": 1,
+      "matched_count": 0,
+      "normalized_correct_count": 0,
+      "missing_count": 0,
+      "normalized_accuracy": 0.0,
+      "coverage": 0.0,
+      "average_confidence": null
+    },
+    "BillingAddressRecipient": {
+      "field_name": "BillingAddressRecipient",
+      "expected_count": 0,
+      "predicted_count": 1,
+      "matched_count": 0,
+      "normalized_correct_count": 0,
+      "missing_count": 0,
+      "normalized_accuracy": 0.0,
+      "coverage": 0.0,
+      "average_confidence": null
+    },
+    "VendorAddress": {
+      "field_name": "VendorAddress",
+      "expected_count": 0,
+      "predicted_count": 1,
+      "matched_count": 0,
+      "normalized_correct_count": 0,
+      "missing_count": 0,
+      "normalized_accuracy": 0.0,
+      "coverage": 0.0,
+      "average_confidence": null
+    },
+    "VendorAddressRecipient": {
+      "field_name": "VendorAddressRecipient",
+      "expected_count": 0,
+      "predicted_count": 1,
+      "matched_count": 0,
+      "normalized_correct_count": 0,
+      "missing_count": 0,
+      "normalized_accuracy": 0.0,
+      "coverage": 0.0,
+      "average_confidence": null
+    },
+    "currency": {
+      "field_name": "currency",
+      "expected_count": 1,
+      "predicted_count": 0,
+      "matched_count": 0,
+      "normalized_correct_count": 0,
+      "missing_count": 1,
+      "normalized_accuracy": 0.0,
+      "coverage": 0.0,
+      "average_confidence": null
+    },
+    "customerName": {
+      "field_name": "customerName",
+      "expected_count": 1,
+      "predicted_count": 1,
+      "matched_count": 1,
+      "normalized_correct_count": 1,
+      "missing_count": 0,
+      "normalized_accuracy": 1.0,
+      "coverage": 1.0,
+      "average_confidence": 0.9279999732971191
+    },
+    "dueDate": {
+      "field_name": "dueDate",
+      "expected_count": 1,
+      "predicted_count": 1,
+      "matched_count": 1,
+      "normalized_correct_count": 1,
+      "missing_count": 0,
+      "normalized_accuracy": 1.0,
+      "coverage": 1.0,
+      "average_confidence": 0.9819999933242798
+    },
+    "invoiceDate": {
+      "field_name": "invoiceDate",
+      "expected_count": 1,
+      "predicted_count": 1,
+      "matched_count": 1,
+      "normalized_correct_count": 1,
+      "missing_count": 0,
+      "normalized_accuracy": 1.0,
+      "coverage": 1.0,
+      "average_confidence": 0.9829999804496765
+    },
+    "invoiceNumber": {
+      "field_name": "invoiceNumber",
+      "expected_count": 1,
+      "predicted_count": 1,
+      "matched_count": 1,
+      "normalized_correct_count": 1,
+      "missing_count": 0,
+      "normalized_accuracy": 1.0,
+      "coverage": 1.0,
+      "average_confidence": 0.9829999804496765
+    },
+    "purchaseOrderNumber": {
+      "field_name": "purchaseOrderNumber",
+      "expected_count": 1,
+      "predicted_count": 1,
+      "matched_count": 1,
+      "normalized_correct_count": 1,
+      "missing_count": 0,
+      "normalized_accuracy": 1.0,
+      "coverage": 1.0,
+      "average_confidence": 0.9819999933242798
+    },
+    "subtotal": {
+      "field_name": "subtotal",
+      "expected_count": 1,
+      "predicted_count": 1,
+      "matched_count": 1,
+      "normalized_correct_count": 1,
+      "missing_count": 0,
+      "normalized_accuracy": 1.0,
+      "coverage": 1.0,
+      "average_confidence": 0.9390000104904175
+    },
+    "supplierName": {
+      "field_name": "supplierName",
+      "expected_count": 1,
+      "predicted_count": 1,
+      "matched_count": 1,
+      "normalized_correct_count": 1,
+      "missing_count": 0,
+      "normalized_accuracy": 1.0,
+      "coverage": 1.0,
+      "average_confidence": 0.9160000085830688
+    },
+    "supplierTaxId": {
+      "field_name": "supplierTaxId",
+      "expected_count": 1,
+      "predicted_count": 1,
+      "matched_count": 1,
+      "normalized_correct_count": 1,
+      "missing_count": 0,
+      "normalized_accuracy": 1.0,
+      "coverage": 1.0,
+      "average_confidence": 0.746999979019165
+    },
+    "taxAmount": {
+      "field_name": "taxAmount",
+      "expected_count": 1,
+      "predicted_count": 1,
+      "matched_count": 1,
+      "normalized_correct_count": 1,
+      "missing_count": 0,
+      "normalized_accuracy": 1.0,
+      "coverage": 1.0,
+      "average_confidence": 0.9380000233650208
+    },
+    "totalAmount": {
+      "field_name": "totalAmount",
+      "expected_count": 1,
+      "predicted_count": 1,
+      "matched_count": 1,
+      "normalized_correct_count": 1,
+      "missing_count": 0,
+      "normalized_accuracy": 1.0,
+      "coverage": 1.0,
+      "average_confidence": 0.9380000233650208
+    }
+  },
+  "typeSummaries": {
+    "invoice": {
+      "document_type": "invoice",
+      "document_count": 1,
+      "classification_evaluated_count": 0,
+      "classification_correct": 0,
+      "classification_accuracy": null,
+      "expected_field_count": 11,
+      "normalized_correct_count": 10,
+      "field_coverage": 0.9090909090909091,
+      "normalized_exact_match_rate": 0.9090909090909091
+    }
+  }
+}
