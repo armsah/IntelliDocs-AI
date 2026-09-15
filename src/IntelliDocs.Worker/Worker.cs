@@ -5,6 +5,7 @@ using IntelliDocs.Core.DocumentIntelligence;
 using IntelliDocs.Core.Documents;
 using IntelliDocs.Core.Messaging;
 using IntelliDocs.Core.Storage;
+using IntelliDocs.Core.Validation;
 using IntelliDocs.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -272,10 +273,32 @@ public sealed class Worker : BackgroundService
                             route.QueryFields),
                         args.CancellationToken);
 
+            if (job.ProcessingStatus ==
+                DocumentStatus.Processing)
+            {
+                job.TransitionTo(
+                    DocumentStatus.Extracted,
+                    "service-bus-worker",
+                    message.ProcessingStage,
+                    "Document classification and Document Intelligence extraction completed.");
+
+                job.TransitionTo(
+                    DocumentStatus.Validating,
+                    "service-bus-worker",
+                    "validation",
+                    "Deterministic confidence policy and business validation started.");
+            }
+
+            var validation =
+                DocumentConfidencePolicy.Evaluate(
+                    classification,
+                    analysis);
+
             var processingResult =
                 new DocumentProcessingResult(
                     classification,
-                    analysis);
+                    analysis,
+                    validation);
 
             var resultJson =
                 JsonSerializer.Serialize(
@@ -307,15 +330,28 @@ public sealed class Worker : BackgroundService
                 analysis.ModelId,
                 analysis.ModelVersion);
 
+            var finalStatus =
+                validation.Decision ==
+                    DocumentRoutingDecision.Approved
+                    ? DocumentStatus.Approved
+                    : DocumentStatus.NeedsReview;
+
             if (job.ProcessingStatus ==
-                DocumentStatus.Processing)
+                DocumentStatus.Validating)
             {
                 job.TransitionTo(
-                    DocumentStatus.Extracted,
+                    finalStatus,
                     "service-bus-worker",
-                    message.ProcessingStage,
-                    "Document classification and Document Intelligence extraction completed and were persisted.");
+                    "validation",
+                    $"Policy confidence {validation.PolicyConfidence:F4}; decision {validation.Decision}; issues {validation.Issues.Count}.");
             }
+
+            _logger.LogInformation(
+                "Validated document {DocumentId}; policy confidence {PolicyConfidence:F4}; decision {Decision}; issues {IssueCount}.",
+                job.DocumentId,
+                validation.PolicyConfidence,
+                validation.Decision,
+                validation.Issues.Count);
 
             await dbContext
                 .SaveChangesAsync();
@@ -405,6 +441,11 @@ public sealed class Worker : BackgroundService
             job.DocumentId,
             args.Message.DeliveryCount,
             MaxDeliveryCount);
+
+        await dbContext
+            .Entry(job)
+            .ReloadAsync(
+                args.CancellationToken);
 
         if (args.Message.DeliveryCount >=
             MaxDeliveryCount)

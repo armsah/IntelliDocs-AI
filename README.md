@@ -1404,6 +1404,69 @@ P6 therefore satisfies the phase exit criterion:
 
 ---
 
+## P7 - Confidence Policy and Business Validation
+
+P7 converts P6 classification and extraction output into deterministic business decisions. AI confidence is retained as evidence, but confidence alone is never sufficient for approval.
+
+### Confidence policy
+
+The C# policy is implemented under `src/IntelliDocs.Core/Validation/`.
+
+The routing thresholds remain aligned with P0:
+
+| Policy confidence | Decision |
+| --- | --- |
+| `>= 0.90` | `Approved` only for a supported structured document with no blocking validation issue |
+| `>= 0.70` and `< 0.90` | `NeedsReview` |
+| `< 0.70` | `NeedsReview` with `LOW_CONFIDENCE` |
+
+Policy confidence is the minimum of classifier confidence and the confidence values of present mandatory fields.
+
+Missing mandatory fields remain explicit business-rule failures rather than artificial zero-confidence values. The P0 `0.90` auto-approval threshold was intentionally not lowered for the P6 classifier confidence distribution.
+
+### Deterministic normalization
+
+`DocumentFieldNormalizer` normalizes extracted values without inventing missing data. It handles German and English dates and numbers, explicit currency mappings, identifier casing, and whitespace.
+
+### Business validation
+
+`DocumentBusinessValidator` enforces the P0 mandatory fields for Invoice, Purchase Order, and Delivery Note documents.
+
+Blocking validation includes missing mandatory fields, invalid dates, invalid total amounts, invalid currency codes, and negative total amounts. Negative totals produce a `Critical` issue.
+
+Contracts, forms, unknown classifications, and unsupported types route to manual review.
+
+### Worker routing
+
+After classification and extraction, the worker normalizes fields, validates business rules, applies the confidence policy, persists the result, and routes the document.
+
+Successful state paths are:
+
+    Processing -> Extracted -> Validating -> Approved
+    Processing -> Extracted -> Validating -> NeedsReview
+
+`DocumentProcessingResult` persists `Classification`, `Analysis`, and `Validation` in the existing JSON analysis envelope. The validation result contains normalized fields, policy confidence, routing decision, and validation issues.
+
+This extends the existing `jsonb` envelope, so P7 requires no database migration.
+
+### Retry and DLQ correctness
+
+P7 preserves the P5 at-least-once Service Bus semantics. Before failure routing, the worker reloads `DocumentJob` from PostgreSQL so unsaved in-memory validation transitions are not mistaken for durable state.
+
+If final persistence fails, durable `Processing` remains eligible for retry or `DeadLettered`. If persistence succeeds but Service Bus completion fails, durable `Approved` or `NeedsReview` is retained instead of being falsely dead-lettered.
+
+### Policy evidence
+
+P7 tests cover confidence boundaries, mandatory fields, critical validation, manual-review types, normalization, successful validation routing, and the retained dead-letter path.
+
+Complete .NET regression: 55 succeeded, 0 failed, 0 skipped.
+
+Evidence: `docs/evidence/p7/policy-tests.md`
+
+P7 exit criterion - deterministic routing backed by policy tests: **PASS**.
+
+---
+
 ## Terraform
 
 Terraform configuration is located in:
@@ -1588,22 +1651,22 @@ Development-stage public endpoints, local authentication, and API-key/connection
 
 ## Next Phase
 
-**P7 — Confidence and business validation**
+**P8 - Human review portal**
 
-P7 turns the classification and extraction confidence produced by P6 into explicit document-processing decisions.
+P8 exposes the `NeedsReview` workflow to a human reviewer while preserving the deterministic validation evidence produced by P7.
 
 Planned work includes:
 
-- field-level confidence policy
-- document-level confidence policy
-- mandatory-field validation
-- typed monetary and date validation
-- invoice total and tax consistency checks
-- Purchase Order business rules
-- Delivery Note business rules
-- unsupported and ambiguous classification handling
-- automatic approval for sufficiently confident valid documents
-- `NeedsReview` routing for low-confidence or conflicting results
-- validation evidence and deterministic failure cases
+- review queue for `NeedsReview` documents
+- document and extracted-field inspection
+- normalized value and confidence display
+- validation issue display
+- source and provenance visualization where available
+- field correction workflow
+- reviewer approval and rejection actions
+- `NeedsReview -> InReview -> Approved/Rejected` state transitions
+- reviewer identity and audit metadata
+- concurrency-safe review behavior
+- review-focused tests and evidence
 
-The objective is to convert AI output into deterministic business decisions rather than treating model confidence as sufficient on its own.
+The objective is to make uncertain or business-invalid AI results operationally reviewable without bypassing the durable document state machine.
