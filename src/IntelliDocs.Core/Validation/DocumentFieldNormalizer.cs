@@ -160,15 +160,14 @@ public static partial class DocumentFieldNormalizer
     {
         return value.Trim().ToUpperInvariant() switch
         {
-            "€" => "EUR",
+            "\u20AC" => "EUR",
             "EURO" => "EUR",
             "$" => "USD",
             "US$" => "USD",
-            "£" => "GBP",
+            "\u00A3" => "GBP",
             _ => value.Trim().ToUpperInvariant()
         };
     }
-
     [GeneratedRegex(@"\s+")]
     private static partial Regex WhitespaceRegex();
 }

@@ -1,0 +1,184 @@
+@page "/"
+@rendermode InteractiveServer
+@inject ReviewApiClient ReviewApi
+@inject NavigationManager Navigation
+
+<PageTitle>Review Queue - IntelliDocs AI</PageTitle>
+
+<h1>Human Review Queue</h1>
+
+<p class="text-muted">
+    Documents routed to human review by the IntelliDocs confidence
+    and business-validation policy.
+</p>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <label for="reviewer" class="form-label">
+            Reviewer identity
+        </label>
+
+        <input id="reviewer"
+               class="form-control"
+               @bind="_reviewer"
+               placeholder="reviewer@example.com" />
+
+        <div class="form-text">
+            P8 uses an explicit reviewer identity for auditability.
+            Microsoft Entra authentication will replace this input in P9.
+        </div>
+    </div>
+</div>
+
+@if (_loading)
+{
+    <p>Loading review queue...</p>
+}
+else if (_error is not null)
+{
+    <div class="alert alert-danger" role="alert">
+        <strong>Unable to load review queue.</strong>
+        <div>@_error</div>
+    </div>
+
+    <button class="btn btn-outline-primary"
+            @onclick="LoadQueueAsync">
+        Retry
+    </button>
+}
+else if (_queue.Count == 0)
+{
+    <div class="alert alert-success" role="status">
+        No documents currently require human review.
+    </div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-striped align-middle">
+            <thead>
+                <tr>
+                    <th>Document</th>
+                    <th>Tenant</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Submitted UTC</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in _queue)
+                {
+                    <tr>
+                        <td>
+                            <div>@item.OriginalFileName</div>
+                            <small class="text-muted">
+                                @item.DocumentId
+                            </small>
+                        </td>
+                        <td>@item.TenantId</td>
+                        <td>@(item.DetectedType ?? "Unknown")</td>
+                        <td>
+                            <span class="badge text-bg-warning">
+                                @item.ProcessingStatus
+                            </span>
+                        </td>
+                        <td>
+                            @item.SubmittedAtUtc.ToString(
+                                "yyyy-MM-dd HH:mm:ss")
+                        </td>
+                        <td class="text-end">
+                            <button class="btn btn-primary btn-sm"
+                                    disabled="@IsClaimDisabled(item)"
+                                    @onclick="() => StartReviewAsync(item)">
+                                @ClaimButtonText(item)
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private IReadOnlyList<DocumentReviewQueueItem> _queue =
+        Array.Empty<DocumentReviewQueueItem>();
+
+    private string _reviewer = "reviewer@example.com";
+    private string? _error;
+    private Guid? _claimingDocumentId;
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadQueueAsync();
+    }
+
+    private async Task LoadQueueAsync()
+    {
+        _loading = true;
+        _error = null;
+
+        try
+        {
+            _queue = await ReviewApi.GetQueueAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task StartReviewAsync(
+        DocumentReviewQueueItem item)
+    {
+        if (string.IsNullOrWhiteSpace(_reviewer))
+        {
+            _error = "Reviewer identity is required.";
+            return;
+        }
+
+        _claimingDocumentId = item.DocumentId;
+        _error = null;
+
+        try
+        {
+            await ReviewApi.StartReviewAsync(
+                item.DocumentId,
+                _reviewer.Trim());
+
+            Navigation.NavigateTo(
+                $"/reviews/{item.DocumentId}");
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            await LoadQueueAsync();
+        }
+        finally
+        {
+            _claimingDocumentId = null;
+        }
+    }
+
+    private bool IsClaimDisabled(
+        DocumentReviewQueueItem item)
+    {
+        return _claimingDocumentId is not null
+            || string.IsNullOrWhiteSpace(_reviewer)
+            || item.ProcessingStatus != DocumentStatus.NeedsReview;
+    }
+
+    private string ClaimButtonText(
+        DocumentReviewQueueItem item)
+    {
+        return _claimingDocumentId == item.DocumentId
+            ? "Claiming..."
+            : "Start review";
+    }
+}

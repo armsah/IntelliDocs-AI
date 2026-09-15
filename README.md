@@ -89,7 +89,7 @@ Document processing state remains durable in PostgreSQL rather than being inferr
 - [x] P5 — Service Bus worker, retries, DLQ and re-drive
 - [x] P6 — Classification/extraction evaluation
 - [x] P7 — Confidence policy and business validation
-- [ ] P8 — Human-review portal
+- [x] P8 — Human-review portal
 - [ ] P9 — Entra ID, managed identity and Key Vault
 - [ ] P10 — Private-reference networking
 - [ ] P11 — Observability, AI quality and cost metrics
@@ -97,25 +97,34 @@ Document processing state remains durable in PostgreSQL rather than being inferr
 
 ## Current Phase
 
-**P7 — Confidence policy and business validation: complete**
+**P8 — Human-review portal: complete**
 
-P7 converts classification and extraction results into deterministic approval or human-review decisions.
+P8 makes deterministic `NeedsReview` decisions operationally reviewable while preserving the original machine result as immutable evidence.
 
-The C# validation pipeline now provides:
+The human-review workflow now provides:
 
-- deterministic normalization for dates, amounts, currencies, identifiers, and whitespace
-- mandatory-field and business-rule validation for Invoice, Purchase Order, and Delivery Note documents
-- policy confidence based on classifier confidence and present mandatory-field confidence
-- `Approved` routing only when policy confidence is at least `0.90` and no blocking validation issue exists
-- `NeedsReview` routing for lower-confidence, unsupported, unknown, or business-invalid documents
-- durable Extracted -> Validating -> Approved/NeedsReview state transitions
-- validation evidence persisted in the existing processing-result JSON envelope
+- a Blazor Server review queue for documents in `NeedsReview`
+- explicit `NeedsReview -> InReview -> Approved/Rejected` state transitions
+- reviewer assignment and reviewer-attributed workflow actions
+- field corrections stored separately from the original AI extraction result
+- auditable correction values, reviewer identity, and correction timestamps
+- approval/rejection decisions with reviewer identity, reason, and decision timestamp
+- PostgreSQL persistence for reviews and corrections
+- API endpoints for queue, review start, corrections, and final decisions
+- integration tests covering auditable approval and rejection workflows
+- reproducible Development-only demo seeding
+- Linux container images for the API and review portal
+- optional Azure Container Apps definitions, disabled by default until application deployment configuration is supplied
 
-Policy and routing behavior is covered by automated tests, with the complete .NET suite passing 55/55 tests and the Python evaluation regression suite passing 21/21 tests.
+The complete .NET regression suite passes 63/63 tests, the Python evaluation regression suite passes 21/21 tests, and the P7 validation regression passes 29/29 tests after the Linux-build Unicode portability repair.
+
+P8 evidence is retained at `docs/evidence/p8/review-demo.md`.
+
+The P8 exit criterion — corrections auditable: **PASS**.
 
 Next:
 
-**P8 — Human-review portal**
+**P9 — Entra ID, managed identity and Key Vault**
 
 ---
 
@@ -1647,22 +1656,18 @@ Development-stage public endpoints, local authentication, and API-key/connection
 
 ## Next Phase
 
-**P8 - Human review portal**
+**P9 — Entra ID, managed identity and Key Vault**
 
-P8 exposes the `NeedsReview` workflow to a human reviewer while preserving the deterministic validation evidence produced by P7.
+P9 hardens application identity and secret handling for the Azure-hosted IntelliDocs services.
 
 Planned work includes:
 
-- review queue for `NeedsReview` documents
-- document and extracted-field inspection
-- normalized value and confidence display
-- validation issue display
-- source and provenance visualization where available
-- field correction workflow
-- reviewer approval and rejection actions
-- `NeedsReview -> InReview -> Approved/Rejected` state transitions
-- reviewer identity and audit metadata
-- concurrency-safe review behavior
-- review-focused tests and evidence
+- Microsoft Entra authentication for reviewer-facing and API access
+- managed identities for Azure-hosted application workloads
+- Azure Key Vault for secrets that cannot be eliminated
+- least-privilege Azure RBAC assignments
+- removal of development-style application credential handling from deployed workloads
+- reviewer identity derived from authenticated Entra principals instead of manually supplied reviewer strings
+- authentication and authorization tests and evidence
 
-The objective is to make uncertain or business-invalid AI results operationally reviewable without bypassing the durable document state machine.
+P10 will subsequently address the private-reference networking boundary.

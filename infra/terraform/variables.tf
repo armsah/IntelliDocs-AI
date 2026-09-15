@@ -62,3 +62,21 @@ variable "postgresql_zone" {
   type        = string
   default     = "3"
 }
+
+variable "deploy_application_container_apps" {
+  description = "Whether to deploy the IntelliDocs API and human-review portal Container Apps."
+  type        = bool
+  default     = false
+}
+
+variable "api_container_image" {
+  description = "OCI image reference for the IntelliDocs API."
+  type        = string
+  default     = "mcr.microsoft.com/dotnet/samples:aspnetapp"
+}
+
+variable "review_portal_container_image" {
+  description = "OCI image reference for the IntelliDocs human-review portal."
+  type        = string
+  default     = "mcr.microsoft.com/dotnet/samples:aspnetapp"
+}

@@ -1,0 +1,421 @@
+@page "/reviews/{DocumentId:guid}"
+@rendermode InteractiveServer
+@inject ReviewApiClient ReviewApi
+@inject NavigationManager Navigation
+
+<PageTitle>Document Review - IntelliDocs AI</PageTitle>
+
+@if (_loading)
+{
+    <h1>Document Review</h1>
+    <p>Loading review...</p>
+}
+else if (_error is not null)
+{
+    <h1>Document Review</h1>
+
+    <div class="alert alert-danger" role="alert">
+        <strong>Review operation failed.</strong>
+        <div>@_error</div>
+    </div>
+
+    <button class="btn btn-outline-secondary"
+            @onclick="ReturnToQueue">
+        Return to queue
+    </button>
+}
+else if (_review is null)
+{
+    <h1>Document Review</h1>
+
+    <div class="alert alert-warning">
+        Review record was not found.
+    </div>
+}
+else
+{
+    <div class="d-flex justify-content-between
+                align-items-start mb-4">
+        <div>
+            <h1>Document Review</h1>
+            <div class="text-muted">
+                @_review.OriginalFileName
+            </div>
+        </div>
+
+        <span class="badge text-bg-warning fs-6">
+            @_review.ProcessingStatus
+        </span>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    Document
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Document ID</dt>
+                        <dd class="col-sm-8">
+                            @_review.DocumentId
+                        </dd>
+
+                        <dt class="col-sm-4">Tenant</dt>
+                        <dd class="col-sm-8">
+                            @_review.TenantId
+                        </dd>
+
+                        <dt class="col-sm-4">Type</dt>
+                        <dd class="col-sm-8">
+                            @(_review.DetectedType ?? "Unknown")
+                        </dd>
+
+                        <dt class="col-sm-4">Reviewer</dt>
+                        <dd class="col-sm-8">
+                            @_review.Reviewer
+                        </dd>
+
+                        <dt class="col-sm-4">Started UTC</dt>
+                        <dd class="col-sm-8">
+                            @_review.StartedAtUtc.ToString(
+                                "yyyy-MM-dd HH:mm:ss")
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    Machine Result
+                </div>
+                <div class="card-body">
+                    @if (string.IsNullOrWhiteSpace(
+                        _review.MachineResultJson))
+                    {
+                        <p class="text-muted mb-0">
+                            No machine result is available.
+                        </p>
+                    }
+                    else
+                    {
+                        <pre class="bg-light border rounded p-3
+                                    overflow-auto"
+                             style="max-height: 24rem;">@FormatJson(
+                                 _review.MachineResultJson)</pre>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-header">
+            Correction Audit Trail
+        </div>
+        <div class="card-body">
+            @if (_review.Corrections.Count == 0)
+            {
+                <p class="text-muted">
+                    No corrections recorded yet.
+                </p>
+            }
+            else
+            {
+                <div class="table-responsive mb-4">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Field</th>
+                                <th>Original</th>
+                                <th>Corrected</th>
+                                <th>Reviewer</th>
+                                <th>Corrected UTC</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var correction
+                                in _review.Corrections)
+                            {
+                                <tr>
+                                    <td>@correction.FieldName</td>
+                                    <td>
+                                        @(correction.OriginalValue
+                                            ?? "(null)")
+                                    </td>
+                                    <td>
+                                        @(correction.CorrectedValue
+                                            ?? "(null)")
+                                    </td>
+                                    <td>@correction.Reviewer</td>
+                                    <td>
+                                        @correction.CorrectedAtUtc
+                                            .ToString(
+                                                "yyyy-MM-dd HH:mm:ss")
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+
+            @if (!_review.Decision.HasValue)
+            {
+                <h2 class="h5">Add correction</h2>
+
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">
+                            Field name
+                        </label>
+                        <input class="form-control"
+                               @bind="_fieldName" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">
+                            Original value
+                        </label>
+                        <input class="form-control"
+                               @bind="_originalValue" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">
+                            Corrected value
+                        </label>
+                        <input class="form-control"
+                               @bind="_correctedValue" />
+                    </div>
+                </div>
+
+                <button class="btn btn-outline-primary mt-3"
+                        disabled="@_saving"
+                        @onclick="AddCorrectionAsync">
+                    Add correction
+                </button>
+            }
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-header">
+            Review Decision
+        </div>
+        <div class="card-body">
+            @if (_review.Decision.HasValue)
+            {
+                <div class="alert alert-info mb-0">
+                    <strong>
+                        @_review.Decision
+                    </strong>
+
+                    @if (!string.IsNullOrWhiteSpace(
+                        _review.DecisionReason))
+                    {
+                        <div>
+                            @_review.DecisionReason
+                        </div>
+                    }
+
+                    @if (_review.DecidedAtUtc.HasValue)
+                    {
+                        <div class="small mt-2">
+                            Decided UTC:
+                            @_review.DecidedAtUtc.Value.ToString(
+                                "yyyy-MM-dd HH:mm:ss")
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <label class="form-label">
+                    Decision reason
+                </label>
+
+                <textarea class="form-control"
+                          rows="3"
+                          @bind="_decisionReason">
+                </textarea>
+
+                <div class="d-flex gap-2 mt-3">
+                    <button class="btn btn-success"
+                            disabled="@_saving"
+                            @onclick="ApproveAsync">
+                        Approve
+                    </button>
+
+                    <button class="btn btn-danger"
+                            disabled="@_saving"
+                            @onclick="RejectAsync">
+                        Reject
+                    </button>
+                </div>
+            }
+        </div>
+    </div>
+
+    <button class="btn btn-link mt-3"
+            @onclick="ReturnToQueue">
+        Return to review queue
+    </button>
+}
+
+@code {
+    [Parameter]
+    public Guid DocumentId { get; set; }
+
+    private DocumentReview? _review;
+    private string? _error;
+    private string _fieldName = string.Empty;
+    private string? _originalValue;
+    private string? _correctedValue;
+    private string? _decisionReason;
+    private bool _loading = true;
+    private bool _saving;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadReviewAsync();
+    }
+
+    private async Task LoadReviewAsync()
+    {
+        _loading = true;
+        _error = null;
+
+        try
+        {
+            _review =
+                await ReviewApi.GetReviewAsync(DocumentId);
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task AddCorrectionAsync()
+    {
+        if (_review is null)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_fieldName))
+        {
+            _error = "Field name is required.";
+            return;
+        }
+
+        _saving = true;
+        _error = null;
+
+        try
+        {
+            _review =
+                await ReviewApi.AddCorrectionAsync(
+                    DocumentId,
+                    new AddCorrectionRequest(
+                        _fieldName.Trim(),
+                        NullIfEmpty(_originalValue),
+                        NullIfEmpty(_correctedValue),
+                        _review.Reviewer));
+
+            _fieldName = string.Empty;
+            _originalValue = null;
+            _correctedValue = null;
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private Task ApproveAsync()
+    {
+        return CompleteAsync(
+            DocumentReviewDecision.Approved);
+    }
+
+    private Task RejectAsync()
+    {
+        return CompleteAsync(
+            DocumentReviewDecision.Rejected);
+    }
+
+    private async Task CompleteAsync(
+        DocumentReviewDecision decision)
+    {
+        if (_review is null)
+        {
+            return;
+        }
+
+        _saving = true;
+        _error = null;
+
+        try
+        {
+            _review =
+                await ReviewApi.CompleteReviewAsync(
+                    DocumentId,
+                    new CompleteReviewRequest(
+                        decision,
+                        _review.Reviewer,
+                        NullIfEmpty(_decisionReason)));
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private void ReturnToQueue()
+    {
+        Navigation.NavigateTo("/");
+    }
+
+    private static string? NullIfEmpty(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value)
+            ? null
+            : value.Trim();
+    }
+
+    private static string FormatJson(string json)
+    {
+        try
+        {
+            using var document =
+                System.Text.Json.JsonDocument.Parse(json);
+
+            return System.Text.Json.JsonSerializer.Serialize(
+                document.RootElement,
+                new System.Text.Json.JsonSerializerOptions
+                {
+                    WriteIndented = true
+                });
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return json;
+        }
+    }
+}

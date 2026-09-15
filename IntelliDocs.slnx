@@ -3,6 +3,7 @@
     <Project Path="src/IntelliDocs.Api/IntelliDocs.Api.csproj" />
     <Project Path="src/IntelliDocs.Core/IntelliDocs.Core.csproj" />
     <Project Path="src/IntelliDocs.Infrastructure/IntelliDocs.Infrastructure.csproj" />
+    <Project Path="src/IntelliDocs.ReviewPortal/IntelliDocs.ReviewPortal.csproj" />
     <Project Path="src/IntelliDocs.Worker/IntelliDocs.Worker.csproj" />
   </Folder>
   <Folder Name="/tests/">

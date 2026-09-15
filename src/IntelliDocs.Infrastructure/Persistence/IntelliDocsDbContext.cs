@@ -1,4 +1,5 @@
 using IntelliDocs.Core.Documents;
+using IntelliDocs.Core.Reviews;
 using Microsoft.EntityFrameworkCore;
 
 namespace IntelliDocs.Infrastructure.Persistence;
@@ -19,6 +20,12 @@ public sealed class IntelliDocsDbContext : DbContext
 
     public DbSet<DocumentAnalysisRecord> DocumentAnalysisRecords =>
         Set<DocumentAnalysisRecord>();
+
+    public DbSet<DocumentReview> DocumentReviews =>
+        Set<DocumentReview>();
+
+    public DbSet<DocumentReviewCorrection> DocumentReviewCorrections =>
+        Set<DocumentReviewCorrection>();
 
     protected override void OnModelCreating(
         ModelBuilder modelBuilder)

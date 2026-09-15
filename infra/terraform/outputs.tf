@@ -52,6 +52,7 @@ output "postgresql_location" {
   description = "Azure region hosting PostgreSQL Flexible Server."
   value       = azurerm_postgresql_flexible_server.main.location
 }
+
 output "document_intelligence_name" {
   description = "Azure AI Document Intelligence account name."
   value       = azurerm_cognitive_account.document_intelligence.name
@@ -75,4 +76,18 @@ output "service_bus_fully_qualified_namespace" {
 output "service_bus_document_processing_queue_name" {
   description = "Document processing Service Bus queue name."
   value       = azurerm_servicebus_queue.document_processing.name
+}
+
+output "api_container_app_fqdn" {
+  description = "Public FQDN of the IntelliDocs API Container App when application deployment is enabled."
+  value = var.deploy_application_container_apps ? (
+    azurerm_container_app.api[0].ingress[0].fqdn
+  ) : null
+}
+
+output "review_portal_container_app_fqdn" {
+  description = "Public FQDN of the IntelliDocs human-review portal when application deployment is enabled."
+  value = var.deploy_application_container_apps ? (
+    azurerm_container_app.review_portal[0].ingress[0].fqdn
+  ) : null
 }

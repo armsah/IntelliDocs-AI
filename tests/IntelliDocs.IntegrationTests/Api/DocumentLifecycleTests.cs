@@ -742,6 +742,11 @@ public sealed class DocumentLifecycleTests
                 .GetRequiredService<IntelliDocsDbContext>();
 
         await dbContext.Database.MigrateAsync();
+        await dbContext.DocumentReviewCorrections
+            .ExecuteDeleteAsync();
+
+        await dbContext.DocumentReviews
+            .ExecuteDeleteAsync();
 
         await dbContext.DocumentAnalysisRecords
             .ExecuteDeleteAsync();

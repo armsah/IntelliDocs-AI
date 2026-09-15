@@ -1,0 +1,11 @@
+**/bin/
+**/obj/
+.git/
+.github/
+.vs/
+.idea/
+infra/terraform/.terraform/
+infra/terraform/*.tfstate
+infra/terraform/*.tfstate.*
+infra/terraform/*.tfplan
+TestResults/
