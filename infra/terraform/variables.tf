@@ -80,3 +80,24 @@ variable "review_portal_container_image" {
   type        = string
   default     = "mcr.microsoft.com/dotnet/samples:aspnetapp"
 }
+
+variable "worker_container_image" {
+  description = "OCI image reference for the IntelliDocs document-processing Worker."
+  type        = string
+  default     = "mcr.microsoft.com/dotnet/samples:aspnetapp"
+}
+
+variable "postgresql_connection_string_key_vault_secret_id" {
+  description = "Versionless Key Vault secret ID containing the PostgreSQL application connection string. Required when application Container Apps are deployed."
+  type        = string
+  default     = ""
+
+  validation {
+    condition = (
+      !var.deploy_application_container_apps ||
+      length(trimspace(var.postgresql_connection_string_key_vault_secret_id)) > 0
+    )
+
+    error_message = "postgresql_connection_string_key_vault_secret_id must be supplied when application Container Apps are deployed."
+  }
+}

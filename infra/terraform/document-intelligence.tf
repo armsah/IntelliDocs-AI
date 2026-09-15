@@ -8,7 +8,7 @@ resource "azurerm_cognitive_account" "document_intelligence" {
   sku_name = "S0"
 
   public_network_access_enabled = true
-  local_auth_enabled            = true
+  local_auth_enabled            = false
 
   tags = local.common_tags
 }

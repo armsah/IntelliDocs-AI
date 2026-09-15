@@ -1,3 +1,5 @@
+using Azure.Core;
+using Azure.Identity;
 using Azure.Messaging.ServiceBus;
 using Azure.Storage.Blobs;
 using IntelliDocs.Core.DocumentClassification;
@@ -22,17 +24,37 @@ builder.Services.AddDbContextFactory<IntelliDocsDbContext>(
     options =>
         options.UseNpgsql(databaseConnectionString));
 
-var blobStorageConnectionString =
-    builder.Configuration.GetConnectionString("BlobStorage")
-    ?? throw new InvalidOperationException(
-        "Connection string 'BlobStorage' is not configured.");
-
 builder.Services.Configure<BlobStorageOptions>(
     builder.Configuration.GetSection(
         BlobStorageOptions.SectionName));
 
-builder.Services.AddSingleton(
-    new BlobServiceClient(blobStorageConnectionString));
+builder.Services.AddSingleton<BlobServiceClient>(sp =>
+{
+    var connectionString =
+        builder.Configuration.GetConnectionString("BlobStorage");
+
+    if (!string.IsNullOrWhiteSpace(connectionString))
+    {
+        return new BlobServiceClient(connectionString);
+    }
+
+    var serviceUri =
+        builder.Configuration[
+            $"{BlobStorageOptions.SectionName}:ServiceUri"];
+
+    if (string.IsNullOrWhiteSpace(serviceUri))
+    {
+        throw new InvalidOperationException(
+            "Blob Storage connection string or service URI is required.");
+    }
+
+    var credential =
+        sp.GetRequiredService<TokenCredential>();
+
+    return new BlobServiceClient(
+        new Uri(serviceUri),
+        credential);
+});
 
 builder.Services.AddSingleton<
     IDocumentStorage,
@@ -41,6 +63,9 @@ builder.Services.AddSingleton<
 builder.Services.Configure<DocumentIntelligenceOptions>(
     builder.Configuration.GetSection(
         DocumentIntelligenceOptions.SectionName));
+
+builder.Services.AddSingleton<TokenCredential>(
+    _ => new DefaultAzureCredential());
 
 builder.Services.AddSingleton<
     IDocumentIntelligenceProvider,
@@ -54,20 +79,31 @@ builder.Services.Configure<ServiceBusOptions>(
     builder.Configuration.GetSection(
         ServiceBusOptions.SectionName));
 
-builder.Services.AddSingleton(sp =>
+builder.Services.AddSingleton<ServiceBusClient>(sp =>
 {
     var options = sp
         .GetRequiredService<IOptions<ServiceBusOptions>>()
         .Value;
 
-    if (string.IsNullOrWhiteSpace(options.ConnectionString))
+    if (!string.IsNullOrWhiteSpace(options.ConnectionString))
     {
-        throw new InvalidOperationException(
-            "ServiceBus:ConnectionString is required for P5 local execution.");
+        return new ServiceBusClient(
+            options.ConnectionString);
     }
 
+    if (string.IsNullOrWhiteSpace(
+            options.FullyQualifiedNamespace))
+    {
+        throw new InvalidOperationException(
+            "Service Bus connection string or fully qualified namespace is required.");
+    }
+
+    var credential =
+        sp.GetRequiredService<TokenCredential>();
+
     return new ServiceBusClient(
-        options.ConnectionString);
+        options.FullyQualifiedNamespace,
+        credential);
 });
 
 builder.Services.AddSingleton(sp =>

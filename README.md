@@ -90,14 +90,14 @@ Document processing state remains durable in PostgreSQL rather than being inferr
 - [x] P6 — Classification/extraction evaluation
 - [x] P7 — Confidence policy and business validation
 - [x] P8 — Human-review portal
-- [ ] P9 — Entra ID, managed identity and Key Vault
+- [x] P9 — Entra ID, managed identity and Key Vault
 - [ ] P10 — Private-reference networking
 - [ ] P11 — Observability, AI quality and cost metrics
 - [ ] P12 — Load, failure and quality testing
 
 ## Current Phase
 
-**P8 — Human-review portal: complete**
+**P9 — Entra ID, managed identity and Key Vault: complete**
 
 P8 makes deterministic `NeedsReview` decisions operationally reviewable while preserving the original machine result as immutable evidence.
 
@@ -124,7 +124,7 @@ The P8 exit criterion — corrections auditable: **PASS**.
 
 Next:
 
-**P9 — Entra ID, managed identity and Key Vault**
+**P10 — Private-reference networking**
 
 ---
 
@@ -1654,9 +1654,24 @@ Development-stage public endpoints, local authentication, and API-key/connection
 
 ---
 
+## P9 — Identity and Secretless Authentication
+
+P9 adds Microsoft Entra authentication, managed identities, Azure Key Vault integration, workload identity federation, and least-privilege Azure RBAC.
+
+Reviewer-facing workflows require authentication, and reviewer identity is derived from the authenticated Entra principal rather than a caller-supplied reviewer string.
+
+The Review Portal requests the delegated `Review.Access` scope when calling the protected API. Its production confidential-client credential uses a federated user-assigned managed identity with `SignedAssertionFromManagedIdentity` instead of an Entra application client secret.
+
+The API and Worker use managed identity for supported Azure data-plane access. PostgreSQL runtime configuration is referenced through Azure Key Vault rather than embedded in deployed Container App environment-variable values.
+
+P9 evidence, including the identity diagram, RBAC matrix, credential inventory, and validation boundary, is retained at `docs/evidence/p9/identity.md`.
+
+The P9 exit criterion — no application client secret: **PASS**.
+
+---
 ## Next Phase
 
-**P9 — Entra ID, managed identity and Key Vault**
+**P10 — Private-reference networking**
 
 P9 hardens application identity and secret handling for the Azure-hosted IntelliDocs services.
 

@@ -1,5 +1,6 @@
 using Azure;
 using Azure.AI.DocumentIntelligence;
+using Azure.Core;
 using IntelliDocs.Core.DocumentClassification;
 using Microsoft.Extensions.Options;
 
@@ -12,20 +13,17 @@ public sealed class AzureDocumentClassifier
     private readonly string _classifierId;
 
     public AzureDocumentClassifier(
-        IOptions<DocumentIntelligenceOptions> options)
+        IOptions<DocumentIntelligenceOptions> options,
+        TokenCredential credential)
     {
+        ArgumentNullException.ThrowIfNull(credential);
+
         var settings = options.Value;
 
         if (string.IsNullOrWhiteSpace(settings.Endpoint))
         {
             throw new InvalidOperationException(
                 "Document Intelligence endpoint is not configured.");
-        }
-
-        if (string.IsNullOrWhiteSpace(settings.ApiKey))
-        {
-            throw new InvalidOperationException(
-                "Document Intelligence API key is not configured.");
         }
 
         if (string.IsNullOrWhiteSpace(settings.ClassifierId))
@@ -36,9 +34,15 @@ public sealed class AzureDocumentClassifier
 
         _classifierId = settings.ClassifierId.Trim();
 
-        _client = new DocumentIntelligenceClient(
-            new Uri(settings.Endpoint),
-            new AzureKeyCredential(settings.ApiKey));
+        var endpoint = new Uri(settings.Endpoint);
+
+        _client = string.IsNullOrWhiteSpace(settings.ApiKey)
+            ? new DocumentIntelligenceClient(
+                endpoint,
+                credential)
+            : new DocumentIntelligenceClient(
+                endpoint,
+                new AzureKeyCredential(settings.ApiKey));
     }
 
     public async Task<DocumentClassificationResult> ClassifyAsync(

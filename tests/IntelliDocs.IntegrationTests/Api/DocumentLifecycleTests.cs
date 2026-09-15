@@ -13,6 +13,9 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using IntelliDocs.IntegrationTests.Auth;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.TestHost;
 
 namespace IntelliDocs.IntegrationTests.Api;
 
@@ -33,6 +36,24 @@ public sealed class DocumentLifecycleTests
                     "Database=intellidocs;" +
                     "Username=intellidocs;" +
                     "Password=intellidocs_dev");
+
+                builder.ConfigureTestServices(services =>
+                {
+                    services
+                        .AddAuthentication(options =>
+                        {
+                            options.DefaultAuthenticateScheme =
+                                TestAuthenticationHandler.AuthenticationScheme;
+
+                            options.DefaultChallengeScheme =
+                                TestAuthenticationHandler.AuthenticationScheme;
+                        })
+                    .AddScheme<
+                        AuthenticationSchemeOptions,
+                        TestAuthenticationHandler>(
+                        TestAuthenticationHandler.AuthenticationScheme,
+                        _ => { });
+                });
 
                 builder.UseSetting(
                     "ConnectionStrings:BlobStorage",

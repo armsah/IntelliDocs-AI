@@ -1,4 +1,5 @@
 @page "/"
+@attribute [Authorize]
 @rendermode InteractiveServer
 @inject ReviewApiClient ReviewApi
 @inject NavigationManager Navigation
@@ -12,24 +13,6 @@
     and business-validation policy.
 </p>
 
-<div class="card mb-4">
-    <div class="card-body">
-        <label for="reviewer" class="form-label">
-            Reviewer identity
-        </label>
-
-        <input id="reviewer"
-               class="form-control"
-               @bind="_reviewer"
-               placeholder="reviewer@example.com" />
-
-        <div class="form-text">
-            P8 uses an explicit reviewer identity for auditability.
-            Microsoft Entra authentication will replace this input in P9.
-        </div>
-    </div>
-</div>
-
 @if (_loading)
 {
     <p>Loading review queue...</p>
@@ -41,8 +24,7 @@ else if (_error is not null)
         <div>@_error</div>
     </div>
 
-    <button class="btn btn-outline-primary"
-            @onclick="LoadQueueAsync">
+    <button class="btn btn-outline-primary" @onclick="LoadQueueAsync">
         Retry
     </button>
 }
@@ -88,8 +70,7 @@ else
                                 "yyyy-MM-dd HH:mm:ss")
                         </td>
                         <td class="text-end">
-                            <button class="btn btn-primary btn-sm"
-                                    disabled="@IsClaimDisabled(item)"
+                            <button class="btn btn-primary btn-sm" disabled="@IsClaimDisabled(item)"
                                     @onclick="() => StartReviewAsync(item)">
                                 @ClaimButtonText(item)
                             </button>
@@ -105,7 +86,6 @@ else
     private IReadOnlyList<DocumentReviewQueueItem> _queue =
         Array.Empty<DocumentReviewQueueItem>();
 
-    private string _reviewer = "reviewer@example.com";
     private string? _error;
     private Guid? _claimingDocumentId;
     private bool _loading = true;
@@ -137,11 +117,6 @@ else
     private async Task StartReviewAsync(
         DocumentReviewQueueItem item)
     {
-        if (string.IsNullOrWhiteSpace(_reviewer))
-        {
-            _error = "Reviewer identity is required.";
-            return;
-        }
 
         _claimingDocumentId = item.DocumentId;
         _error = null;
@@ -149,8 +124,7 @@ else
         try
         {
             await ReviewApi.StartReviewAsync(
-                item.DocumentId,
-                _reviewer.Trim());
+                item.DocumentId);
 
             Navigation.NavigateTo(
                 $"/reviews/{item.DocumentId}");
@@ -170,7 +144,6 @@ else
         DocumentReviewQueueItem item)
     {
         return _claimingDocumentId is not null
-            || string.IsNullOrWhiteSpace(_reviewer)
             || item.ProcessingStatus != DocumentStatus.NeedsReview;
     }
 

@@ -9,31 +9,27 @@ public sealed class AzureServiceBusDocumentProcessingPublisher
     : IDocumentProcessingPublisher,
       IAsyncDisposable
 {
-    private readonly ServiceBusClient _client;
     private readonly ServiceBusSender _sender;
     private readonly JsonSerializerOptions _jsonOptions =
         new(JsonSerializerDefaults.Web);
 
     public AzureServiceBusDocumentProcessingPublisher(
+        ServiceBusClient client,
         IOptions<ServiceBusOptions> options)
     {
+        ArgumentNullException.ThrowIfNull(client);
+        ArgumentNullException.ThrowIfNull(options);
+
         var value = options.Value;
 
-        if (string.IsNullOrWhiteSpace(value.DocumentProcessingQueueName))
+        if (string.IsNullOrWhiteSpace(
+                value.DocumentProcessingQueueName))
         {
             throw new InvalidOperationException(
                 "ServiceBus:DocumentProcessingQueueName is required.");
         }
 
-        if (string.IsNullOrWhiteSpace(value.ConnectionString))
-        {
-            throw new InvalidOperationException(
-                "ServiceBus:ConnectionString is required for P5 local execution.");
-        }
-
-        _client = new ServiceBusClient(value.ConnectionString);
-
-        _sender = _client.CreateSender(
+        _sender = client.CreateSender(
             value.DocumentProcessingQueueName);
     }
 
@@ -75,6 +71,5 @@ public sealed class AzureServiceBusDocumentProcessingPublisher
     public async ValueTask DisposeAsync()
     {
         await _sender.DisposeAsync();
-        await _client.DisposeAsync();
     }
 }

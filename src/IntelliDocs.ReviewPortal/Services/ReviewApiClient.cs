@@ -34,13 +34,12 @@ public sealed class ReviewApiClient
 
     public async Task<DocumentReview> StartReviewAsync(
         Guid documentId,
-        string reviewer,
         CancellationToken cancellationToken = default)
     {
         using var response =
             await _httpClient.PostAsJsonAsync(
                 $"api/v1/reviews/{documentId}/start",
-                new StartReviewRequest(reviewer),
+                new StartReviewRequest(),
                 cancellationToken);
 
         return await ReadReviewAsync(

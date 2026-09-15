@@ -59,16 +59,13 @@ public sealed record DocumentReview(
     IReadOnlyList<DocumentReviewCorrection> Corrections,
     string? MachineResultJson);
 
-public sealed record StartReviewRequest(
-    string Reviewer);
+public sealed record StartReviewRequest();
 
 public sealed record AddCorrectionRequest(
     string FieldName,
     string? OriginalValue,
-    string? CorrectedValue,
-    string Reviewer);
+    string? CorrectedValue);
 
 public sealed record CompleteReviewRequest(
     DocumentReviewDecision Decision,
-    string Reviewer,
     string? Reason);

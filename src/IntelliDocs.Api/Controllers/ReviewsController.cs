@@ -4,9 +4,12 @@ using IntelliDocs.Core.Reviews;
 using IntelliDocs.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 
 namespace IntelliDocs.Api.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/v1/reviews")]
 public sealed class ReviewsController : ControllerBase
@@ -76,14 +79,6 @@ public sealed class ReviewsController : ControllerBase
         StartDocumentReviewRequest request,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(request.Reviewer))
-        {
-            return BadRequest(
-                new
-                {
-                    error = "Reviewer is required."
-                });
-        }
 
         var job =
             await _dbContext.DocumentJobs
@@ -126,7 +121,7 @@ public sealed class ReviewsController : ControllerBase
                 });
         }
 
-        var reviewer = request.Reviewer.Trim();
+        var reviewer = GetReviewerIdentity();
 
         var review =
             DocumentReview.Start(
@@ -170,14 +165,13 @@ public sealed class ReviewsController : ControllerBase
             AddDocumentReviewCorrectionRequest request,
             CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(request.Reviewer) ||
-            string.IsNullOrWhiteSpace(request.FieldName))
+        if (string.IsNullOrWhiteSpace(request.FieldName))
         {
             return BadRequest(
                 new
                 {
                     error =
-                        "Reviewer and fieldName are required."
+                        "FieldName is required."
                 });
         }
 
@@ -223,13 +217,15 @@ public sealed class ReviewsController : ControllerBase
                 });
         }
 
+        var reviewer = GetReviewerIdentity();
+
         try
         {
             review.AddCorrection(
                 request.FieldName,
                 request.OriginalValue,
                 request.CorrectedValue,
-                request.Reviewer);
+                reviewer);
         }
         catch (InvalidOperationException exception)
         {
@@ -264,14 +260,7 @@ public sealed class ReviewsController : ControllerBase
             CompleteDocumentReviewRequest request,
             CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(request.Reviewer))
-        {
-            return BadRequest(
-                new
-                {
-                    error = "Reviewer is required."
-                });
-        }
+
 
         if (!Enum.IsDefined(request.Decision))
         {
@@ -324,11 +313,13 @@ public sealed class ReviewsController : ControllerBase
                 });
         }
 
+        var reviewer = GetReviewerIdentity();
+
         try
         {
             review.Complete(
                 request.Decision,
-                request.Reviewer,
+                reviewer,
                 request.Reason);
         }
         catch (InvalidOperationException exception)
@@ -348,7 +339,7 @@ public sealed class ReviewsController : ControllerBase
 
         job.TransitionTo(
             nextStatus,
-            request.Reviewer.Trim(),
+            reviewer,
             ReviewStage,
             request.Reason);
 
@@ -359,6 +350,22 @@ public sealed class ReviewsController : ControllerBase
             await ToResponseAsync(
                 review,
                 cancellationToken));
+    }
+
+    private string GetReviewerIdentity()
+    {
+        var reviewer =
+            User.FindFirstValue("oid") ??
+            User.FindFirstValue(
+                ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrWhiteSpace(reviewer))
+        {
+            throw new InvalidOperationException(
+                "Authenticated reviewer identity is unavailable.");
+        }
+
+        return reviewer;
     }
 
     private async Task<DocumentReviewResponse> ToResponseAsync(

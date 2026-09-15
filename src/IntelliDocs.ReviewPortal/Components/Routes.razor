@@ -1,6 +1,18 @@
 ﻿<Router AppAssembly="typeof(Program).Assembly" NotFoundPage="typeof(Pages.NotFound)">
     <Found Context="routeData">
-        <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)" />
+        <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)">
+            <NotAuthorized>
+                <div class="alert alert-warning m-4">
+                    Authentication is required to access
+                    the IntelliDocs review portal.
+                </div>
+
+                <a class="btn btn-primary ms-4" href="/MicrosoftIdentity/Account/SignIn">
+                    Sign in with Microsoft Entra ID
+                </a>
+            </NotAuthorized>
+        </AuthorizeRouteView>
+
         <FocusOnNavigate RouteData="routeData" Selector="h1" />
     </Found>
 </Router>

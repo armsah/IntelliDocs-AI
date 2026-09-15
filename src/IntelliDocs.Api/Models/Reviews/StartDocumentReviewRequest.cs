@@ -1,4 +1,3 @@
 ﻿namespace IntelliDocs.Api.Models.Reviews;
 
-public sealed record StartDocumentReviewRequest(
-    string Reviewer);
+public sealed record StartDocumentReviewRequest();

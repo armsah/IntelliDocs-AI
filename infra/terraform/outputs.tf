@@ -91,3 +91,45 @@ output "review_portal_container_app_fqdn" {
     azurerm_container_app.review_portal[0].ingress[0].fqdn
   ) : null
 }
+
+output "key_vault_name" {
+  description = "Key Vault used for IntelliDocs secret management."
+  value       = azurerm_key_vault.main.name
+}
+
+output "key_vault_uri" {
+  description = "URI of the IntelliDocs Key Vault."
+  value       = azurerm_key_vault.main.vault_uri
+}
+
+output "worker_container_app_name" {
+  description = "Name of the IntelliDocs document-processing Worker Container App when application deployment is enabled."
+  value = var.deploy_application_container_apps ? (
+    azurerm_container_app.worker[0].name
+  ) : null
+}
+
+output "entra_tenant_id" {
+  description = "Microsoft Entra tenant ID used by IntelliDocs."
+  value       = data.azurerm_client_config.current.tenant_id
+}
+
+output "api_entra_client_id" {
+  description = "Client ID of the IntelliDocs API Entra application registration."
+  value       = azuread_application_registration.api.client_id
+}
+
+output "review_portal_entra_client_id" {
+  description = "Client ID of the IntelliDocs Review Portal Entra application registration."
+  value       = azuread_application_registration.review_portal.client_id
+}
+
+output "review_access_scope" {
+  description = "Delegated OAuth scope exposed by the IntelliDocs API."
+  value       = "api://${azuread_application_registration.api.client_id}/Review.Access"
+}
+
+output "review_portal_credential_identity_client_id" {
+  description = "Client ID of the user-assigned managed identity used as the Review Portal application credential."
+  value       = azurerm_user_assigned_identity.review_portal_credential.client_id
+}

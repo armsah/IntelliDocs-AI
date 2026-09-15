@@ -1,4 +1,5 @@
 using Azure;
+using Azure.Core;
 using Azure.AI.DocumentIntelligence;
 using IntelliDocs.Core.DocumentIntelligence;
 using Microsoft.Extensions.Options;
@@ -11,8 +12,11 @@ public sealed class AzureDocumentIntelligenceProvider
     private readonly DocumentIntelligenceClient _client;
 
     public AzureDocumentIntelligenceProvider(
-        IOptions<DocumentIntelligenceOptions> options)
+        IOptions<DocumentIntelligenceOptions> options,
+        TokenCredential credential)
     {
+        ArgumentNullException.ThrowIfNull(credential);
+
         var settings = options.Value;
 
         if (string.IsNullOrWhiteSpace(settings.Endpoint))
@@ -21,15 +25,15 @@ public sealed class AzureDocumentIntelligenceProvider
                 "Document Intelligence endpoint is not configured.");
         }
 
-        if (string.IsNullOrWhiteSpace(settings.ApiKey))
-        {
-            throw new InvalidOperationException(
-                "Document Intelligence API key is not configured.");
-        }
+        var endpoint = new Uri(settings.Endpoint);
 
-        _client = new DocumentIntelligenceClient(
-            new Uri(settings.Endpoint),
-            new AzureKeyCredential(settings.ApiKey));
+        _client = string.IsNullOrWhiteSpace(settings.ApiKey)
+            ? new DocumentIntelligenceClient(
+                endpoint,
+                credential)
+            : new DocumentIntelligenceClient(
+                endpoint,
+                new AzureKeyCredential(settings.ApiKey));
     }
 
     public async Task<DocumentAnalysisResult> AnalyzeAsync(

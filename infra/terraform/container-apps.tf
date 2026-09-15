@@ -24,6 +24,16 @@ resource "azurerm_container_app" "api" {
   resource_group_name          = azurerm_resource_group.main.name
   revision_mode                = "Single"
 
+  identity {
+    type = "SystemAssigned"
+  }
+
+  secret {
+    name                = "postgresql-connection-string"
+    identity            = "System"
+    key_vault_secret_id = var.postgresql_connection_string_key_vault_secret_id
+  }
+
   template {
     min_replicas = 0
     max_replicas = 1
@@ -37,6 +47,26 @@ resource "azurerm_container_app" "api" {
       env {
         name  = "ASPNETCORE_URLS"
         value = "http://+:8080"
+      }
+
+      env {
+        name        = "ConnectionStrings__PostgreSql"
+        secret_name = "postgresql-connection-string"
+      }
+
+      env {
+        name  = "BlobStorage__ServiceUri"
+        value = azurerm_storage_account.documents.primary_blob_endpoint
+      }
+
+      env {
+        name  = "ServiceBus__FullyQualifiedNamespace"
+        value = "${azurerm_servicebus_namespace.main.name}.servicebus.windows.net"
+      }
+
+      env {
+        name  = "ServiceBus__DocumentProcessingQueueName"
+        value = azurerm_servicebus_queue.document_processing.name
       }
     }
   }
@@ -62,6 +92,14 @@ resource "azurerm_container_app" "review_portal" {
   resource_group_name          = azurerm_resource_group.main.name
   revision_mode                = "Single"
 
+  identity {
+    type = "SystemAssigned, UserAssigned"
+
+    identity_ids = [
+      azurerm_user_assigned_identity.review_portal_credential.id
+    ]
+  }
+
   template {
     min_replicas = 0
     max_replicas = 1
@@ -71,6 +109,26 @@ resource "azurerm_container_app" "review_portal" {
       image  = var.review_portal_container_image
       cpu    = 0.5
       memory = "1Gi"
+
+      env {
+        name  = "AzureAd__TenantId"
+        value = data.azurerm_client_config.current.tenant_id
+      }
+
+      env {
+        name  = "AzureAd__ClientId"
+        value = azuread_application_registration.api.client_id
+      }
+
+      env {
+        name  = "AzureAd__ClientCredentials__0__ManagedIdentityClientId"
+        value = azurerm_user_assigned_identity.review_portal_credential.client_id
+      }
+
+      env {
+        name  = "ReviewApi__Scopes__0"
+        value = "api://${azuread_application_registration.api.client_id}/Review.Access"
+      }
 
       env {
         name  = "ASPNETCORE_URLS"
@@ -91,6 +149,74 @@ resource "azurerm_container_app" "review_portal" {
     traffic_weight {
       percentage      = 100
       latest_revision = true
+    }
+  }
+
+  tags = local.common_tags
+}
+
+resource "azurerm_container_app" "worker" {
+  count = var.deploy_application_container_apps ? 1 : 0
+
+  name                         = "ca-${local.name_prefix}-worker"
+  container_app_environment_id = azurerm_container_app_environment.main.id
+  resource_group_name          = azurerm_resource_group.main.name
+  revision_mode                = "Single"
+
+  identity {
+    type = "SystemAssigned"
+  }
+
+  secret {
+    name                = "postgresql-connection-string"
+    identity            = "System"
+    key_vault_secret_id = var.postgresql_connection_string_key_vault_secret_id
+  }
+
+  template {
+    min_replicas = 1
+    max_replicas = 1
+
+    container {
+      name   = "worker"
+      image  = var.worker_container_image
+      cpu    = 0.5
+      memory = "1Gi"
+
+      env {
+        name        = "ConnectionStrings__PostgreSql"
+        secret_name = "postgresql-connection-string"
+      }
+
+      env {
+        name  = "BlobStorage__ServiceUri"
+        value = azurerm_storage_account.documents.primary_blob_endpoint
+      }
+
+      env {
+        name  = "BlobStorage__ContainerName"
+        value = azurerm_storage_container.documents.name
+      }
+
+      env {
+        name  = "ServiceBus__FullyQualifiedNamespace"
+        value = "${azurerm_servicebus_namespace.main.name}.servicebus.windows.net"
+      }
+
+      env {
+        name  = "ServiceBus__DocumentProcessingQueueName"
+        value = azurerm_servicebus_queue.document_processing.name
+      }
+
+      env {
+        name  = "DocumentIntelligence__Endpoint"
+        value = azurerm_cognitive_account.document_intelligence.endpoint
+      }
+
+      env {
+        name  = "DocumentIntelligence__ClassifierId"
+        value = "intellidocs-p6-classifier-v1"
+      }
     }
   }
 

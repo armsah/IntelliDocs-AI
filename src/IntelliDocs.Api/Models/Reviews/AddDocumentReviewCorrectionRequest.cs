@@ -3,5 +3,4 @@
 public sealed record AddDocumentReviewCorrectionRequest(
     string FieldName,
     string? OriginalValue,
-    string? CorrectedValue,
-    string Reviewer);
+    string? CorrectedValue);

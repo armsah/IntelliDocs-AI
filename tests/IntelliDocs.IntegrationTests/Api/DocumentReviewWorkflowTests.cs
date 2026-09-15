@@ -4,8 +4,11 @@ using IntelliDocs.Api.Models.Reviews;
 using IntelliDocs.Core.Documents;
 using IntelliDocs.Core.Reviews;
 using IntelliDocs.Infrastructure.Persistence;
+using IntelliDocs.IntegrationTests.Auth;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -15,6 +18,8 @@ public sealed class DocumentReviewWorkflowTests
     : IClassFixture<WebApplicationFactory<Program>>
 {
     private readonly WebApplicationFactory<Program> _factory;
+    private readonly WebApplicationFactory<Program>
+        _authenticatedFactory;
 
     public DocumentReviewWorkflowTests(
         WebApplicationFactory<Program> factory)
@@ -29,10 +34,60 @@ public sealed class DocumentReviewWorkflowTests
                     "Username=intellidocs;" +
                     "Password=intellidocs_dev");
             });
+
+        _authenticatedFactory =
+            _factory.WithWebHostBuilder(builder =>
+            {
+                builder.ConfigureTestServices(services =>
+                {
+                    services
+                        .AddAuthentication(options =>
+                        {
+                            options.DefaultAuthenticateScheme =
+                                TestAuthenticationHandler.AuthenticationScheme;
+
+                            options.DefaultChallengeScheme =
+                                TestAuthenticationHandler.AuthenticationScheme;
+                        })
+                        .AddScheme<
+                            AuthenticationSchemeOptions,
+                            TestAuthenticationHandler>(
+                            TestAuthenticationHandler.AuthenticationScheme,
+                            _ => { });
+                });
+            });
     }
 
     [Fact]
-    public async Task ReviewWorkflow_CorrectionAndApproval_AreAuditable()
+    public async Task ReviewQueue_Unauthenticated_ReturnsUnauthorized()
+    {
+        using var client =
+            _authenticatedFactory.CreateClient(
+                new WebApplicationFactoryClientOptions
+                {
+                    AllowAutoRedirect = false
+                });
+
+        using var request =
+            new HttpRequestMessage(
+                HttpMethod.Get,
+                "/api/v1/reviews");
+
+        request.Headers.Add(
+            TestAuthenticationHandler.UnauthenticatedHeader,
+            "true");
+
+        using var response =
+            await client.SendAsync(request);
+
+        Assert.Equal(
+            HttpStatusCode.Unauthorized,
+            response.StatusCode);
+    }
+
+    [Fact]
+    public async Task
+        ReviewWorkflow_CorrectionAndApproval_AreAuditable()
     {
         await ResetDatabaseAsync();
 
@@ -43,13 +98,14 @@ public sealed class DocumentReviewWorkflowTests
             await SeedNeedsReviewDocumentAsync(
                 machineResult);
 
-        using var client = _factory.CreateClient();
+        using var client =
+            _authenticatedFactory.CreateClient();
 
         var queue =
             await client.GetFromJsonAsync<
                 List<DocumentReviewQueueItemResponse>>(
-                    "/api/v1/reviews",
-                    JsonOptions());
+                "/api/v1/reviews",
+                JsonOptions());
 
         Assert.NotNull(queue);
 
@@ -65,8 +121,7 @@ public sealed class DocumentReviewWorkflowTests
         using var startResponse =
             await client.PostAsJsonAsync(
                 $"/api/v1/reviews/{documentId}/start",
-                new StartDocumentReviewRequest(
-                    "reviewer@example.com"));
+                new StartDocumentReviewRequest());
 
         Assert.Equal(
             HttpStatusCode.OK,
@@ -78,12 +133,15 @@ public sealed class DocumentReviewWorkflowTests
                     JsonOptions());
 
         Assert.NotNull(started);
+
         Assert.Equal(
             DocumentStatus.InReview,
             started.ProcessingStatus);
+
         Assert.Equal(
-            "reviewer@example.com",
+            TestAuthenticationHandler.ReviewerObjectId,
             started.Reviewer);
+
         AssertJsonEquivalent(
             machineResult,
             started.MachineResultJson);
@@ -94,8 +152,7 @@ public sealed class DocumentReviewWorkflowTests
                 new AddDocumentReviewCorrectionRequest(
                     "totalAmount",
                     "1250.00",
-                    "1520.00",
-                    "reviewer@example.com"));
+                    "1520.00"));
 
         Assert.Equal(
             HttpStatusCode.OK,
@@ -114,14 +171,17 @@ public sealed class DocumentReviewWorkflowTests
         Assert.Equal(
             "totalAmount",
             correction.FieldName);
+
         Assert.Equal(
             "1250.00",
             correction.OriginalValue);
+
         Assert.Equal(
             "1520.00",
             correction.CorrectedValue);
+
         Assert.Equal(
-            "reviewer@example.com",
+            TestAuthenticationHandler.ReviewerObjectId,
             correction.Reviewer);
 
         using var decisionResponse =
@@ -129,7 +189,6 @@ public sealed class DocumentReviewWorkflowTests
                 $"/api/v1/reviews/{documentId}/decision",
                 new CompleteDocumentReviewRequest(
                     DocumentReviewDecision.Approved,
-                    "reviewer@example.com",
                     "Corrected total verified."));
 
         Assert.Equal(
@@ -142,16 +201,22 @@ public sealed class DocumentReviewWorkflowTests
                     JsonOptions());
 
         Assert.NotNull(completed);
+
         Assert.Equal(
             DocumentStatus.Approved,
             completed.ProcessingStatus);
+
         Assert.Equal(
             DocumentReviewDecision.Approved,
             completed.Decision);
+
         Assert.Equal(
             "Corrected total verified.",
             completed.DecisionReason);
-        Assert.NotNull(completed.DecidedAtUtc);
+
+        Assert.NotNull(
+            completed.DecidedAtUtc);
+
         AssertJsonEquivalent(
             machineResult,
             completed.MachineResultJson);
@@ -174,12 +239,21 @@ public sealed class DocumentReviewWorkflowTests
             DocumentReviewDecision.Approved,
             persistedReview.Decision);
 
+        Assert.Equal(
+            TestAuthenticationHandler.ReviewerObjectId,
+            persistedReview.Reviewer);
+
         var persistedCorrection =
-            Assert.Single(persistedReview.Corrections);
+            Assert.Single(
+                persistedReview.Corrections);
 
         Assert.Equal(
             "1520.00",
             persistedCorrection.CorrectedValue);
+
+        Assert.Equal(
+            TestAuthenticationHandler.ReviewerObjectId,
+            persistedCorrection.Reviewer);
 
         var persistedAnalysis =
             await dbContext.DocumentAnalysisRecords
@@ -210,7 +284,8 @@ public sealed class DocumentReviewWorkflowTests
                 x.NextStatus ==
                     DocumentStatus.InReview &&
                 x.Actor ==
-                    "reviewer@example.com" &&
+                    TestAuthenticationHandler
+                        .ReviewerObjectId &&
                 x.ProcessingStage ==
                     "human-review");
 
@@ -222,7 +297,8 @@ public sealed class DocumentReviewWorkflowTests
                 x.NextStatus ==
                     DocumentStatus.Approved &&
                 x.Actor ==
-                    "reviewer@example.com" &&
+                    TestAuthenticationHandler
+                        .ReviewerObjectId &&
                 x.ProcessingStage ==
                     "human-review");
     }
@@ -236,13 +312,13 @@ public sealed class DocumentReviewWorkflowTests
             await SeedNeedsReviewDocumentAsync(
                 """{"validation":{"routingDecision":"NeedsReview"}}""");
 
-        using var client = _factory.CreateClient();
+        using var client =
+            _authenticatedFactory.CreateClient();
 
         using var startResponse =
             await client.PostAsJsonAsync(
                 $"/api/v1/reviews/{documentId}/start",
-                new StartDocumentReviewRequest(
-                    "reviewer@example.com"));
+                new StartDocumentReviewRequest());
 
         Assert.Equal(
             HttpStatusCode.OK,
@@ -253,7 +329,6 @@ public sealed class DocumentReviewWorkflowTests
                 $"/api/v1/reviews/{documentId}/decision",
                 new CompleteDocumentReviewRequest(
                     DocumentReviewDecision.Rejected,
-                    "reviewer@example.com",
                     "Document does not match source evidence."));
 
         Assert.Equal(
@@ -266,15 +341,22 @@ public sealed class DocumentReviewWorkflowTests
                     JsonOptions());
 
         Assert.NotNull(completed);
+
         Assert.Equal(
             DocumentStatus.Rejected,
             completed.ProcessingStatus);
+
         Assert.Equal(
             DocumentReviewDecision.Rejected,
             completed.Decision);
+
         Assert.Equal(
             "Document does not match source evidence.",
             completed.DecisionReason);
+
+        Assert.Equal(
+            TestAuthenticationHandler.ReviewerObjectId,
+            completed.Reviewer);
 
         using var scope =
             _factory.Services.CreateScope();
@@ -293,7 +375,36 @@ public sealed class DocumentReviewWorkflowTests
             DocumentReviewDecision.Rejected,
             review.Decision);
 
-        Assert.NotNull(review.DecidedAtUtc);
+        Assert.Equal(
+            TestAuthenticationHandler.ReviewerObjectId,
+            review.Reviewer);
+
+        Assert.NotNull(
+            review.DecidedAtUtc);
+
+        var job =
+            await dbContext.DocumentJobs
+                .AsNoTracking()
+                .Include(x => x.Transitions)
+                .SingleAsync(
+                    x => x.DocumentId == documentId);
+
+        Assert.Equal(
+            DocumentStatus.Rejected,
+            job.ProcessingStatus);
+
+        Assert.Contains(
+            job.Transitions,
+            x =>
+                x.PreviousStatus ==
+                    DocumentStatus.InReview &&
+                x.NextStatus ==
+                    DocumentStatus.Rejected &&
+                x.Actor ==
+                    TestAuthenticationHandler
+                        .ReviewerObjectId &&
+                x.ProcessingStage ==
+                    "human-review");
     }
 
     private async Task<Guid> SeedNeedsReviewDocumentAsync(
@@ -312,10 +423,12 @@ public sealed class DocumentReviewWorkflowTests
                 "review-invoice.pdf",
                 new string('a', 64));
 
-        var documentId = job.DocumentId;
+        var documentId =
+            job.DocumentId;
 
         job.SetStorageUri(
-            $"http://localhost/documents/{documentId:N}/review-invoice.pdf");
+            $"http://localhost/documents/" +
+            $"{documentId:N}/review-invoice.pdf");
 
         job.TransitionTo(
             DocumentStatus.Stored,
@@ -397,10 +510,12 @@ public sealed class DocumentReviewWorkflowTests
         Assert.NotNull(actual);
 
         using var expectedJson =
-            System.Text.Json.JsonDocument.Parse(expected);
+            System.Text.Json.JsonDocument.Parse(
+                expected);
 
         using var actualJson =
-            System.Text.Json.JsonDocument.Parse(actual);
+            System.Text.Json.JsonDocument.Parse(
+                actual);
 
         Assert.True(
             System.Text.Json.JsonElement.DeepEquals(
@@ -410,6 +525,7 @@ public sealed class DocumentReviewWorkflowTests
             $"Expected: {expected}{Environment.NewLine}" +
             $"Actual: {actual}");
     }
+
     private static System.Text.Json.JsonSerializerOptions
         JsonOptions()
     {
