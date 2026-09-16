@@ -13,9 +13,33 @@ using IntelliDocs.Core.DocumentIntelligence;
 using IntelliDocs.Infrastructure.DocumentIntelligence;
 using IntelliDocs.Core.Messaging;
 using IntelliDocs.Infrastructure.Messaging;
+using Azure.Monitor.OpenTelemetry.AspNetCore;
+using IntelliDocs.Infrastructure.Observability;
 
 
 var builder = WebApplication.CreateBuilder(args);
+
+var applicationInsightsConnectionString =
+    builder.Configuration[
+        "APPLICATIONINSIGHTS_CONNECTION_STRING"];
+
+if (!string.IsNullOrWhiteSpace(
+        applicationInsightsConnectionString))
+{
+    builder.Services
+        .AddOpenTelemetry()
+        .UseAzureMonitor(options =>
+        {
+            options.ConnectionString =
+                applicationInsightsConnectionString;
+        })
+        .WithMetrics(metrics =>
+            metrics.AddMeter(
+                IntelliDocsTelemetry.MeterName))
+        .WithTracing(tracing =>
+            tracing.AddSource(
+                IntelliDocsTelemetry.SourceName));
+}
 
 builder.Services
     .AddControllers()

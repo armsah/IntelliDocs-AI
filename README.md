@@ -92,37 +92,65 @@ Document processing state remains durable in PostgreSQL rather than being inferr
 - [x] P8 — Human-review portal
 - [x] P9 — Entra ID, managed identity and Key Vault
 - [x] P10 — Private-reference networking
-- [ ] P11 — Observability, AI quality and cost metrics
+- [x] P11 — Observability, AI quality and cost metrics
 - [ ] P12 — Load, failure and quality testing
 
 ## Current Phase
 
-**P10 — Private-reference networking: complete**
+## P11 — Observability, AI Quality and Cost Metrics
 
-P10 defines the private-reference network boundary for the Azure-hosted IntelliDocs services.
+P11 adds a shared observability layer across the IntelliDocs API, processing Worker, and Review Portal.
 
-The Terraform architecture now provides:
+Application telemetry uses .NET `Meter` and `ActivitySource` primitives with Azure Monitor OpenTelemetry integration. Terraform adds workspace-based Application Insights backed by the existing Log Analytics workspace and supplies its connection string to the API, Worker, and Review Portal Container Apps.
 
-- an IntelliDocs virtual network with dedicated Container Apps and private-endpoint subnets
-- Container Apps environment integration with the dedicated infrastructure subnet
-- private endpoints for Blob Storage, Service Bus, Key Vault, Document Intelligence, and PostgreSQL
-- private DNS zones and VNet links for all five sensitive backend services
-- public network access disabled for the five sensitive PaaS dependencies
-- Service Bus Premium to support the private endpoint architecture
-- Terraform outputs for the VNet, subnets, and private endpoint addresses
-- explicit separation between the authenticated reviewer-facing application edge and sensitive backend paths
+The processing pipeline exposes the following custom metrics:
 
-P10 evidence, including the network diagram, sensitive-path matrix, DNS mapping, and deployment-validation boundary, is retained at `docs/evidence/p10/network.md`.
+- `intellidocs.documents.processed`
+- `intellidocs.document.processing.duration`
+- `intellidocs.ai.classification.confidence`
+- `intellidocs.ai.policy.confidence`
+- `intellidocs.routing.decisions`
+- `intellidocs.validation.issues`
+- `intellidocs.review.corrections`
+- `intellidocs.review.decisions`
+- `intellidocs.processing.retries`
+- `intellidocs.processing.deadletters`
+- `intellidocs.ai.document_intelligence.operations`
 
-The Terraform configuration passes formatting and static validation. P10 does not claim that the private-reference topology has been applied or live-validated in Azure.
+These signals make processing throughput, successful processing latency, retry/DLQ behavior, AI confidence, deterministic routing, validation outcomes, human-review activity, and Document Intelligence usage observable.
 
-The P10 exit criterion — sensitive paths documented: **PASS**.
+Telemetry dimensions are intentionally bounded. Approved dimensions include `document.type`, `outcome`, `decision`, `severity`, and `operation`.
 
-Next:
+Document IDs, reviewer identities, filenames, extracted values, correction values, exception messages, and free-text reasons are not used as custom metric dimensions.
 
-**P11 — Observability, AI quality and cost metrics**
+Terraform defines the **IntelliDocs - Operations, AI Quality and Cost** Azure Monitor workbook for operational, AI-quality, human-review, and processing-usage visibility.
+
+The Document Intelligence operation counter is an application-level usage proxy, not an Azure billing meter. Actual Azure charges remain authoritative in Azure billing and cost-management data.
+
+P11 evidence, including the telemetry inventory, dashboard design, privacy/cardinality policy, cost interpretation, and deployment-validation boundary, is retained at:
+
+`docs/evidence/p11/observability.md`
+
+P11 validation completed with:
+
+- Terraform formatting and static validation: PASS
+- .NET build: PASS
+- .NET tests: 64/64 passed
+- Python evaluation tests: 21/21 passed
+- README UTF-8/NUL integrity validation: PASS
+- `git diff --check`: PASS, with line-ending normalization warnings only
+
+Terraform was intentionally not applied during P11. Live Application Insights ingestion, workbook rendering, private-network telemetry behavior, and Azure cost correlation remain deployment-validation activities.
+
+The P11 exit criterion — **Quality + ops visible**: **PASS**.
 
 ---
+
+## Next Phase
+
+**P12 — Load, failure and quality testing**
+
+P12 will exercise the completed processing pipeline under load and controlled failure scenarios, validate end-to-end quality behavior, and complete the portfolio demonstration and operational polish.
 
 ## P0 — Architecture and Product Definition
 
@@ -1119,13 +1147,13 @@ A dataset without classifier predictions is reported as classification **not eva
 
 Evaluation showed that a custom extraction model is not currently justified for the synthetic P6 fixtures.
 
-| Document type | Classification | Extraction |
-| --- | --- | --- |
-| Invoice | Custom classifier | `prebuilt-invoice` |
+| Document type  | Classification    | Extraction                       |
+| -------------- | ----------------- | -------------------------------- |
+| Invoice        | Custom classifier | `prebuilt-invoice`               |
 | Purchase Order | Custom classifier | `prebuilt-layout` + query fields |
-| Delivery Note | Custom classifier | `prebuilt-layout` + query fields |
-| Contract | Custom classifier | `prebuilt-layout` |
-| Form | Custom classifier | `prebuilt-layout` |
+| Delivery Note  | Custom classifier | `prebuilt-layout` + query fields |
+| Contract       | Custom classifier | `prebuilt-layout`                |
+| Form           | Custom classifier | `prebuilt-layout`                |
 
 Decision evidence is retained at `docs/evidence/p6/model-selection.md`.
 
@@ -1415,11 +1443,11 @@ The C# policy is implemented under `src/IntelliDocs.Core/Validation/`.
 
 The routing thresholds remain aligned with P0:
 
-| Policy confidence | Decision |
-| --- | --- |
-| `>= 0.90` | `Approved` only for a supported structured document with no blocking validation issue |
-| `>= 0.70` and `< 0.90` | `NeedsReview` |
-| `< 0.70` | `NeedsReview` with `LOW_CONFIDENCE` |
+| Policy confidence      | Decision                                                                              |
+| ---------------------- | ------------------------------------------------------------------------------------- |
+| `>= 0.90`              | `Approved` only for a supported structured document with no blocking validation issue |
+| `>= 0.70` and `< 0.90` | `NeedsReview`                                                                         |
+| `< 0.70`               | `NeedsReview` with `LOW_CONFIDENCE`                                                   |
 
 Policy confidence is the minimum of classifier confidence and the confidence values of present mandatory fields.
 
@@ -1665,6 +1693,7 @@ P9 evidence, including the identity diagram, RBAC matrix, credential inventory, 
 The P9 exit criterion — no application client secret: **PASS**.
 
 ---
+
 ## Next Phase
 
 **P11 — Observability, AI quality and cost metrics**

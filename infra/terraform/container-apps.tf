@@ -52,6 +52,11 @@ resource "azurerm_container_app" "api" {
       }
 
       env {
+        name  = "APPLICATIONINSIGHTS_CONNECTION_STRING"
+        value = azurerm_application_insights.main.connection_string
+      }
+
+      env {
         name        = "ConnectionStrings__PostgreSql"
         secret_name = "postgresql-connection-string"
       }
@@ -111,6 +116,11 @@ resource "azurerm_container_app" "review_portal" {
       image  = var.review_portal_container_image
       cpu    = 0.5
       memory = "1Gi"
+
+      env {
+        name  = "APPLICATIONINSIGHTS_CONNECTION_STRING"
+        value = azurerm_application_insights.main.connection_string
+      }
 
       env {
         name  = "AzureAd__TenantId"
@@ -184,6 +194,11 @@ resource "azurerm_container_app" "worker" {
       image  = var.worker_container_image
       cpu    = 0.5
       memory = "1Gi"
+
+      env {
+        name  = "APPLICATIONINSIGHTS_CONNECTION_STRING"
+        value = azurerm_application_insights.main.connection_string
+      }
 
       env {
         name        = "ConnectionStrings__PostgreSql"

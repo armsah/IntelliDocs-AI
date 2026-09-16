@@ -12,8 +12,32 @@ using IntelliDocs.Infrastructure.Storage;
 using IntelliDocs.Worker;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Azure.Monitor.OpenTelemetry.AspNetCore;
+using IntelliDocs.Infrastructure.Observability;
 
 var builder = Host.CreateApplicationBuilder(args);
+
+var applicationInsightsConnectionString =
+    builder.Configuration[
+        "APPLICATIONINSIGHTS_CONNECTION_STRING"];
+
+if (!string.IsNullOrWhiteSpace(
+        applicationInsightsConnectionString))
+{
+    builder.Services
+        .AddOpenTelemetry()
+        .UseAzureMonitor(options =>
+        {
+            options.ConnectionString =
+                applicationInsightsConnectionString;
+        })
+        .WithMetrics(metrics =>
+            metrics.AddMeter(
+                IntelliDocsTelemetry.MeterName))
+        .WithTracing(tracing =>
+            tracing.AddSource(
+                IntelliDocsTelemetry.SourceName));
+}
 
 var databaseConnectionString =
     builder.Configuration.GetConnectionString("PostgreSql")

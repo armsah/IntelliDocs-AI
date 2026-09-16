@@ -3,8 +3,25 @@ using Microsoft.Identity.Web.UI;
 using IntelliDocs.ReviewPortal.Services;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.Identity.Web;
+using Azure.Monitor.OpenTelemetry.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var applicationInsightsConnectionString =
+    builder.Configuration[
+        "APPLICATIONINSIGHTS_CONNECTION_STRING"];
+
+if (!string.IsNullOrWhiteSpace(
+        applicationInsightsConnectionString))
+{
+    builder.Services
+        .AddOpenTelemetry()
+        .UseAzureMonitor(options =>
+        {
+            options.ConnectionString =
+                applicationInsightsConnectionString;
+        });
+}
 
 builder.Services
     .AddAuthentication(

@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
+using IntelliDocs.Infrastructure.Observability;
 
 namespace IntelliDocs.Api.Controllers;
 
@@ -247,6 +248,12 @@ public sealed class ReviewsController : ControllerBase
         await _dbContext.SaveChangesAsync(
             cancellationToken);
 
+        IntelliDocsTelemetry.ReviewCorrections.Add(
+            1,
+            IntelliDocsTelemetry.Tag(
+                "document.type",
+                job.DetectedType?.ToString() ?? "unknown"));
+
         return Ok(
             await ToResponseAsync(
                 review,
@@ -345,6 +352,15 @@ public sealed class ReviewsController : ControllerBase
 
         await _dbContext.SaveChangesAsync(
             cancellationToken);
+
+        IntelliDocsTelemetry.ReviewDecisions.Add(
+            1,
+            IntelliDocsTelemetry.Tag(
+                "decision",
+                request.Decision.ToString()),
+            IntelliDocsTelemetry.Tag(
+                "document.type",
+                job.DetectedType?.ToString() ?? "unknown"));
 
         return Ok(
             await ToResponseAsync(

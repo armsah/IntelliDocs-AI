@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.Json;
 using Azure.Messaging.ServiceBus;
 using IntelliDocs.Core.DocumentClassification;
@@ -6,6 +7,7 @@ using IntelliDocs.Core.Documents;
 using IntelliDocs.Core.Messaging;
 using IntelliDocs.Core.Storage;
 using IntelliDocs.Core.Validation;
+using IntelliDocs.Infrastructure.Observability;
 using IntelliDocs.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -92,6 +94,9 @@ public sealed class Worker : BackgroundService
     private async Task ProcessMessageAsync(
         ProcessMessageEventArgs args)
     {
+        var processingStarted =
+            Stopwatch.GetTimestamp();
+
         var message =
             await DeserializeMessageAsync(args);
 
@@ -248,6 +253,12 @@ public sealed class Worker : BackgroundService
                             content),
                         args.CancellationToken);
 
+            IntelliDocsTelemetry.ClassificationConfidence.Record(
+                classification.Confidence,
+                IntelliDocsTelemetry.Tag(
+                    "document.type",
+                    classification.DocumentType.ToString()));
+
             var route =
                 DocumentAnalysisRouter.Resolve(
                     classification.DocumentType);
@@ -273,6 +284,15 @@ public sealed class Worker : BackgroundService
                             route.QueryFields),
                         args.CancellationToken);
 
+            IntelliDocsTelemetry.DocumentIntelligenceOperations.Add(
+                1,
+                IntelliDocsTelemetry.Tag(
+                    "operation",
+                    "analyze"),
+                IntelliDocsTelemetry.Tag(
+                    "document.type",
+                    classification.DocumentType.ToString()));
+
             if (job.ProcessingStatus ==
                 DocumentStatus.Processing)
             {
@@ -293,6 +313,33 @@ public sealed class Worker : BackgroundService
                 DocumentConfidencePolicy.Evaluate(
                     classification,
                     analysis);
+
+            IntelliDocsTelemetry.PolicyConfidence.Record(
+                validation.PolicyConfidence,
+                IntelliDocsTelemetry.Tag(
+                    "document.type",
+                    classification.DocumentType.ToString()));
+
+            IntelliDocsTelemetry.RoutingDecisions.Add(
+                1,
+                IntelliDocsTelemetry.Tag(
+                    "decision",
+                    validation.Decision.ToString()),
+                IntelliDocsTelemetry.Tag(
+                    "document.type",
+                    classification.DocumentType.ToString()));
+
+            foreach (var issue in validation.Issues)
+            {
+                IntelliDocsTelemetry.ValidationIssues.Add(
+                    1,
+                    IntelliDocsTelemetry.Tag(
+                        "severity",
+                        issue.Severity.ToString()),
+                    IntelliDocsTelemetry.Tag(
+                        "document.type",
+                        classification.DocumentType.ToString()));
+            }
 
             var processingResult =
                 new DocumentProcessingResult(
@@ -358,6 +405,28 @@ public sealed class Worker : BackgroundService
 
             await args.CompleteMessageAsync(
                 args.Message);
+
+            var processingDuration =
+                Stopwatch.GetElapsedTime(
+                    processingStarted);
+
+            IntelliDocsTelemetry.DocumentsProcessed.Add(
+                1,
+                IntelliDocsTelemetry.Tag(
+                    "outcome",
+                    "success"),
+                IntelliDocsTelemetry.Tag(
+                    "document.type",
+                    classification.DocumentType.ToString()));
+
+            IntelliDocsTelemetry.ProcessingDuration.Record(
+                processingDuration.TotalSeconds,
+                IntelliDocsTelemetry.Tag(
+                    "outcome",
+                    "success"),
+                IntelliDocsTelemetry.Tag(
+                    "document.type",
+                    classification.DocumentType.ToString()));
 
             _logger.LogInformation(
                 "Completed document {DocumentId}; classified as {DocumentType} with confidence {Confidence:F4}; Service Bus message {MessageId} settled successfully.",
@@ -468,6 +537,18 @@ public sealed class Worker : BackgroundService
                 "ProcessingFailed",
                 $"Document processing failed after {args.Message.DeliveryCount} deliveries. {exception.Message}");
 
+            IntelliDocsTelemetry.DeadLetters.Add(
+                1,
+                IntelliDocsTelemetry.Tag(
+                    "outcome",
+                    "processing_failed"));
+
+            IntelliDocsTelemetry.DocumentsProcessed.Add(
+                1,
+                IntelliDocsTelemetry.Tag(
+                    "outcome",
+                    "dead_letter"));
+
             _logger.LogError(
                 exception,
                 "Document {DocumentId} was dead-lettered after {DeliveryCount} deliveries.",
@@ -476,6 +557,12 @@ public sealed class Worker : BackgroundService
 
             return;
         }
+
+        IntelliDocsTelemetry.ProcessingRetries.Add(
+            1,
+            IntelliDocsTelemetry.Tag(
+                "outcome",
+                "retry"));
 
         await args.AbandonMessageAsync(
             args.Message);
