@@ -1,883 +1,587 @@
-IntelliDocs AI
+# IntelliDocs AI
 
-Enterprise document intelligence reference implementation for secure
-ingestion, AI-assisted classification/extraction, deterministic
-confidence-based routing, auditable human review, resilient asynchronous
-processing, and Azure-ready operations.
+> Production-oriented Azure/.NET document intelligence platform for secure ingestion, AI-assisted extraction, deterministic confidence routing, auditable human review, and resilient asynchronous processing.
 
-Project status: P0--P12 complete --- portfolio-ready reference
-implementation.
-Final validated commit: 273f11d
-(P12: add load resilience quality and demo evidence)
+**Status:** P0-P12 complete | Portfolio-ready reference implementation
 
-1. Problem and business scenario
+IntelliDocs AI processes enterprise documents such as invoices, purchase orders, delivery notes, contracts, forms, and scans. It combines Azure AI Document Intelligence with deterministic validation, durable messaging, PostgreSQL workflow state, human review, identity-based access, infrastructure as code, and operational telemetry.
 
-German and European enterprises still receive operational documents
-through heterogeneous channels and formats: invoices, purchase orders,
-delivery notes, contracts, forms, PDFs, scans, and images. Manual
-classification and key-field extraction are slow, inconsistent,
-difficult to audit, and expensive to scale.
+## At a Glance
 
-IntelliDocs AI models a production-oriented document-processing
-platform that:
+| Area | Implementation |
+| --- | --- |
+| Backend | ASP.NET Core / .NET |
+| AI | Azure AI Document Intelligence |
+| Messaging | Azure Service Bus |
+| State | PostgreSQL |
+| Document storage | Azure Blob Storage |
+| Human review | Blazor review portal |
+| Identity | Microsoft Entra ID + Managed Identity |
+| Secrets | Azure Key Vault |
+| Infrastructure | Terraform + Azure Container Apps |
+| Observability | OpenTelemetry + Application Insights + Azure Monitor |
+| Verification | 65/65 .NET tests + 21/21 Python evaluation tests |
 
-accepts documents through an ASP.NET Core API;
+## Problem
 
-persists an authoritative processing state in PostgreSQL;
+Enterprise document processing is more than OCR. A production workflow must determine what a document is, extract useful structure, validate uncertain output, survive transient failures, prevent silent loss of work, protect sensitive content, and provide a controlled fallback when automation is not trustworthy.
 
-stores source documents in Azure Blob Storage;
+IntelliDocs AI targets German/European enterprise documents including invoices, purchase orders, delivery notes, contracts, forms, and scans.
 
-uses Azure Service Bus for durable asynchronous work;
+## Solution
 
-invokes Azure AI Document Intelligence for OCR/layout analysis;
+The platform accepts documents through an ASP.NET Core API, stores originals in Azure Blob Storage, persists authoritative workflow state in PostgreSQL, and processes work asynchronously through Azure Service Bus.
 
-classifies supported document types and normalizes extracted fields;
+Azure AI Document Intelligence performs classification and extraction. Deterministic confidence and business-validation rules then decide whether processing can continue automatically or requires human review.
 
-applies deterministic confidence and business-validation rules;
+The design principle is simple:
 
-routes uncertain or invalid results to an auditable human-review
-workflow;
+> AI proposes; deterministic policy evaluates; humans resolve uncertainty; the system records the decision.
 
-supports bounded retry, dead-lettering, and controlled re-drive;
+## Architecture
 
-exposes operational, AI-quality, review, and usage telemetry;
+### System Architecture
 
-uses Terraform to define the Azure reference architecture.
-
-The system is designed around a simple business principle:
-
-AI proposes; deterministic policy decides whether the result can
-proceed automatically or requires review.
-
-2. 30-second architecture diagram
-
+```mermaid
 flowchart LR
-U[User / Client]
-FD[Front Door + WAF\nproduction reference]
-APIM[API Management\nproduction reference]
-ID[Microsoft Entra ID]
-API[ASP.NET Core\nUpload API]
-BLOB[Azure Blob Storage]
-EG[Event Grid\nchange signal]
-SB[Azure Service Bus\nwork queue + DLQ]
-W[.NET Worker]
-DI[Azure AI\nDocument Intelligence]
-PG[(PostgreSQL)]
-RP[Blazor\nReview Portal]
-MON[Application Insights\nAzure Monitor]
-KV[Key Vault]
+    U[Client / Upstream System] --> FD[Front Door + WAF<br/>Production Reference]
+    FD --> APIM[API Management<br/>Production Reference]
+    APIM --> API[ASP.NET Core API]
+
+    API --> BLOB[Azure Blob Storage]
+    API --> DB[(PostgreSQL)]
+
+    BLOB --> EG[Event Grid]
+    EG --> SB[Azure Service Bus]
+    SB --> WORKER[.NET Worker]
+
+    WORKER --> DI[Azure AI<br/>Document Intelligence]
+    WORKER --> DB
+    WORKER --> POLICY{Confidence +<br/>Business Rules}
+
+    POLICY -->|Accept| OUT[Downstream / Published]
+    POLICY -->|Review| REVIEW[Blazor Review Portal]
+
+    REVIEW --> DB
+    REVIEW --> OUT
+
+    ENTRA[Microsoft Entra ID] --> API
+    ENTRA --> REVIEW
+    KV[Azure Key Vault] --> API
+    KV --> WORKER
+
+    API -. telemetry .-> MON[Application Insights<br/>Azure Monitor]
+    WORKER -. telemetry .-> MON
+    REVIEW -. telemetry .-> MON
+```
+
+### Processing Flow
+
+1. A client submits a document to the ASP.NET Core ingestion API.
+2. The API stores the original in Blob Storage and persists document state in PostgreSQL.
+3. Event Grid signals storage/change events.
+4. Service Bus owns durable processing, retry, settlement, concurrency, and dead-letter semantics.
+5. A .NET worker consumes the message under bounded concurrency.
+6. Azure AI Document Intelligence performs classification and extraction.
+7. Deterministic policy evaluates confidence and business validation.
+8. Acceptable documents continue automatically.
+9. Uncertain or invalid documents are routed to human review.
+10. Retry, dead-letter, and re-drive paths recover failed work.
+
+### Key Design Decisions
+
+| Decision | Rationale |
+| --- | --- |
+| Event Grid signals change; Service Bus owns work semantics | Separates notification from durable processing, retry, settlement, concurrency, and DLQ behavior |
+| PostgreSQL owns authoritative workflow state | State remains queryable and auditable independently of transient message delivery |
+| Blob Storage keeps original documents | Separates binary storage from transactional workflow metadata |
+| AI output passes through deterministic policy | Model confidence alone is not treated as a business decision |
+| Human review is explicit | Uncertain automation becomes controlled work rather than silent failure |
+| Managed identity is preferred | Reduces long-lived Azure credentials |
+| Terraform defines Azure topology | Infrastructure and security assumptions are repeatable and reviewable |
+| OpenTelemetry provides shared instrumentation | API, worker, and portal expose consistent operational signals |
+
+## Engineering Highlights
+
+- Explicit document-processing state transitions in PostgreSQL.
+- Azure Service Bus PeekLock processing with explicit message settlement.
+- Bounded worker concurrency.
+- Retry, dead-letter queue, and controlled re-drive.
+- Generation-aware message identity for reprocessed work.
+- Azure AI Document Intelligence classification and extraction.
+- Deterministic confidence policy with a `0.90` acceptance threshold.
+- Business validation in addition to model confidence.
+- Auditable human review and correction workflow.
+- Microsoft Entra ID authentication and authorization.
+- Managed identities and Azure RBAC.
+- Azure Key Vault integration.
+- Private-reference networking with Private Endpoints and Private DNS.
+- OpenTelemetry metrics and traces.
+- Application Insights / Azure Monitor workbook definitions.
+- Terraform infrastructure validation.
+- Automated .NET and Python verification.
+
+## Quality & Test Results
+
+| Check | Result |
+| --- | ---: |
+| .NET tests | **65/65 passed** |
+| Python evaluation tests | **21/21 passed** |
+| Terraform `fmt -check` | **PASS** |
+| Terraform `validate` | **PASS** |
+| Git diff check | **PASS** |
+| API health regression | **HTTP 200** |
+| Local reliability probe | **520/520 successful** |
+| Local reliability failures | **0** |
 
-    U --> FD --> APIM --> API
-    ID --> API
-    ID --> RP
-    API --> BLOB
-    API --> PG
-    BLOB --> EG
-    API --> SB
-    EG -. change signal .-> SB
-    SB --> W
-    W --> DI
-    W --> PG
-    RP --> API
-    KV -. secrets/config .-> API
-    KV -. secrets/config .-> W
-    API --> MON
-    W --> MON
-    RP --> MON
+### Local Reliability Probe
 
-Core design decision: Event Grid signals change; Service Bus owns
-durable work semantics---delivery, retry, dead-lettering, concurrency,
-and re-drive.
+| Requests | Concurrency | Success | Elapsed | Requests/sec | P50 | P95 | P99 |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 20 | 2 | 20/20 | 0.83 s | 24.07 | 2.11 ms | 84.11 ms | 88.66 ms |
+| 500 | 20 | 500/500 | 45.79 s | 10.92 | 3.77 ms | 26.40 ms | 662.57 ms |
 
-The production-reference network places API, worker, and review
-workloads in a Container Apps VNet integration subnet and sensitive
-Azure dependencies behind Private Endpoints and Private DNS.
+Across both runs, **520/520 requests succeeded with zero failures**.
 
-3. AI/ML scope and explicit non-goals
+> This is a local bounded-concurrency reliability/performance probe, **not a production capacity benchmark**. PowerShell `Start-Job` overhead, local machine scheduling, and the lightweight health endpoint affect throughput and tail latency.
 
-In scope
+## AI & Document Processing
 
-document-type classification for the supported synthetic evaluation
-set;
+### Supported Scope
 
-OCR/layout extraction through Azure AI Document Intelligence;
+The target domain is German/European enterprise document processing, including:
 
-normalized field extraction;
+- invoices;
+- purchase orders;
+- delivery notes;
+- contracts;
+- forms;
+- scanned business documents.
 
-confidence-aware routing;
+Azure AI Document Intelligence provides the AI classification/extraction capability. The surrounding application owns orchestration, state, policy, validation, review, reliability, and observability.
 
-business-rule validation;
+### Confidence & Validation
 
-human correction of uncertain or invalid AI output;
+AI confidence is one signal, not proof that extracted data is correct.
 
-AI model ID/version capture with analysis records;
+The deterministic acceptance threshold demonstrated by this project is:
 
-repeatable quality evaluation and regression testing.
+```text
+0.90
+```
 
-Explicit non-goals
+The routing model is:
 
-This repository does not claim:
+```text
+AI prediction
+     |
+     v
+Confidence + deterministic validation
+     |
+     +---- acceptable ----> automated path
+     |
+     +---- uncertain -----> human review
+```
 
-general-purpose document understanding for arbitrary document
-families;
+The `0.90` threshold is an application policy value demonstrated by the project. It is not claimed to be a universal optimal threshold for every document population.
 
-production accuracy based on the synthetic evaluation set;
+### Human-in-the-Loop
 
-autonomous approval of business documents solely from model
-confidence;
+The Blazor review portal provides a controlled fallback for uncertain or invalid automation. Reviewers can inspect AI-assisted results, correct extracted information, and record an auditable decision.
 
-LLM-based free-form decision making;
+Reviewer identity is derived from the authenticated Entra principal rather than accepted as arbitrary request data.
 
-representative production-scale load certification;
+Review corrections and decisions are also useful quality signals for future analysis.
 
-automated model retraining from reviewer corrections;
+### AI/ML Non-Goals
 
-that every production-reference P9--P11 Azure component has been
-live-deployed.
+IntelliDocs AI does not claim:
 
-The controlled fixtures demonstrate integration correctness and class
-separation. A production model would require a sanitized,
-representative, held-out corpus covering suppliers/customers, layouts,
-scanners, image quality, languages, multi-page documents, missing
-fields, ambiguous documents, and unseen templates.
+- fully autonomous document approval;
+- perfect OCR or extraction;
+- zero-review operation;
+- autonomous model retraining;
+- production accuracy across every document type or language;
+- that model confidence equals calibrated business correctness;
+- that the local reliability probe represents Azure production capacity.
 
-4. Engineering highlights
+### Model Versioning & MLOps
 
-Durable state machine: PostgreSQL is the authoritative
-document/job state store.
+The implementation emphasizes traceability around AI-assisted decisions, confidence, validation outcomes, review corrections, and processing evidence.
 
-Idempotent ingestion: content hashing and tenant-aware duplicate
-handling.
+Automated retraining and automated production model promotion are intentionally outside the current scope.
 
-Asynchronous processing: Service Bus decouples upload latency
-from AI processing.
+Production extensions could add:
 
-At-least-once-safe workflow: durable state is reloaded before
-failure routing.
+- explicit model/deployment version metadata per processed document;
+- versioned evaluation datasets;
+- promotion gates based on regression results;
+- shadow or canary evaluation;
+- drift monitoring;
+- rollback to a previously approved model/deployment;
+- controlled confidence-threshold changes.
 
-Bounded failure handling: retry → terminal failure → DLQ →
-controlled re-drive.
+## Reliability
 
-Deterministic confidence policy: routing is testable and
-independent of subjective model behavior.
+### State & Failure Model
 
-Auditable human review: decisions and field corrections are
-persisted with reviewer identity and timestamps.
+A representative processing path is:
 
-Identity-first Azure design: Entra authentication, managed
-identities, Key Vault, and RBAC; no application client secret in the
-target architecture.
-
-Private-reference networking: VNet, Private Link, Private DNS,
-and disabled backend public access in Terraform.
-
-Low-cardinality telemetry: operations, AI quality, routing,
-review, retry/DLQ, and usage signals.
-
-Infrastructure as code: reproducible Azure resources using
-Terraform.
-
-Portfolio verification: .NET, Python evaluation, Terraform
-validation, runtime health, local load probes, failure evidence, and
-demo runbook.
-
-5. Architecture and service-selection decisions
-
-Concern Decision Rationale
-
-API ASP.NET Core Strong .NET/Azure
-integration,
-testability, typed
-contracts
-
-Durable state PostgreSQL Transactional workflow
-state, audit queries,
-portable relational
-model
-
-Source documents Azure Blob Storage Durable object storage
-suited to PDFs/images
-
-Work orchestration Azure Service Bus PeekLock, retries, DLQ,
-duplicate detection,
-explicit settlement
-
-Change notification Event Grid Event notification
-without making it the
-durable work queue
-
-OCR/layout Azure AI Document Managed document
-Intelligence OCR/layout capability
-
-Worker .NET background worker Explicit control over
-processing, retry,
-persistence, telemetry
-
-Review UI Blazor Shared .NET stack and
-authenticated internal
-workflow
-
-Identity Microsoft Entra ID + Avoid embedded
-managed identity application credentials
-
-Secret store Azure Key Vault Centralized
-secret/configuration
-boundary
-
-Networking VNet + Private Link + Production-reference
-Private DNS isolation of sensitive
-backend paths
-
-Hosting Azure Container Apps Managed container
-runtime with VNet
-integration
-
-Observability OpenTelemetry + Standard
-Application instrumentation plus
-Insights/Azure Monitor Azure-native operations
-
-IaC Terraform Reproducibility,
-reviewable
-infrastructure changes
-
-Why Service Bus rather than Event Grid for processing?
-
-Event Grid is optimized for event notification. The document pipeline
-requires explicit settlement, retry, dead-lettering, delivery-count
-behavior, duplicate handling, and controlled re-drive. Those are Service
-Bus responsibilities.
-
-Why PostgreSQL remains authoritative
-
-Broker delivery state is not business state. The worker reloads the
-current DocumentJob before making durable workflow decisions so
-at-least-once message delivery cannot silently replace the database
-state machine.
-
-6. Data/model/service quality metrics
-
-Quality is evaluated at multiple layers rather than represented by one
-aggregate "AI accuracy" number.
-
-Automated quality gates
-
-Gate Result
-
-.NET unit + integration tests 65 / 65 passed
-Python AI/document evaluation tests 21 / 21 passed
-Terraform fmt -check PASS
-Terraform validate PASS
-Git whitespace/diff gate PASS
-API health regression PASS
-
-The evaluation harness covers:
-
-classification accuracy;
-
-extraction coverage;
-
-raw exact match;
-
-normalized exact match;
-
-missing/unexpected fields;
-
-per-field quality;
-
-per-document-type quality;
-
-confidence calibration.
-
-The synthetic fixtures achieved the expected controlled evaluation
-result, but those results are not presented as representative
-production accuracy.
-
-Confidence policy
-
-The P0 auto-approval threshold is 0.90. Missing mandatory fields
-remain explicit validation failures rather than being converted into
-artificial zero-confidence values. Routing combines model confidence
-with deterministic business validation.
-
-7. Security and privacy model
-
-The target production architecture follows identity-first and
-least-privilege principles.
-
-Authentication and authorization
-
-Microsoft Entra ID protects API/review access.
-
-The API uses Microsoft Identity Web for JWT bearer authentication.
-
-The review portal uses Entra OpenID Connect.
-
-Reviewer identity comes from the authenticated principal (oid)
-rather than a client-supplied reviewer field.
-
-Azure workloads use managed identity where supported.
-
-Terraform defines RBAC assignments for workload-to-resource access.
-
-The portal-to-API credential design uses workload
-identity/federation rather than an application client secret.
-
-Secrets
-
-Azure Key Vault is the target secret boundary.
-
-Secrets, access keys, SAS values, and tokens must not be committed
-or displayed in demos.
-
-Local development configuration is separate from the production
-identity model.
-
-Network isolation
-
-The production-reference Terraform defines:
-
-VNet 10.40.0.0/16;
-
-Container Apps infrastructure subnet 10.40.0.0/23;
-
-Private Endpoint subnet 10.40.2.0/24;
-
-Private Endpoints for Blob, Service Bus, Key Vault, Document
-Intelligence, and PostgreSQL;
-
-Private DNS zones for each sensitive backend;
-
-disabled backend public access in the target configuration.
-
-Telemetry privacy
-
-Custom metrics use bounded, low-cardinality dimensions such as:
-
-document type;
-
-outcome;
-
-decision;
-
-severity;
-
-operation.
-
-Telemetry deliberately avoids document IDs, reviewer IDs, filenames,
-extracted business values, and exception messages as metric dimensions.
-
-8. Reliability/failure model
-
-The processing path is designed for at-least-once delivery, not
-exactly-once assumptions.
-
+```text
 Queued
--> Processing
--> Extracted / review routing
--> transient failure -> Abandon -> redelivery
--> terminal failure -> DeadLettered
-DeadLettered
--> controlled re-drive
--> Queued
--> Processing
+  |
+  v
+Processing
+  |
+  +--> transient failure --> retry
+  |
+  +--> repeated failure --> DeadLettered
+                              |
+                              v
+                           re-drive
+                              |
+                              v
+                            Queued
+                              |
+                              v
+                          Processing
+                              |
+                              v
+                           Extracted
+```
 
-Service Bus semantics
+Service Bus uses:
 
-PeekLock processing;
+- PeekLock;
+- explicit settlement;
+- retry behavior;
+- bounded worker concurrency;
+- dead-letter handling.
 
-explicit completion/abandon/dead-letter settlement;
+The demonstrated dead-letter path uses a maximum delivery count of **5**.
 
-bounded delivery attempts;
+### Retry / DLQ / Re-drive
 
-maximum demonstrated delivery count: 5;
+Re-drive is more than copying a DLQ message back to the queue.
 
-duplicate detection window in the Azure configuration;
+The workflow:
 
-application-level idempotency based on document/work stage;
+1. Loads authoritative PostgreSQL state.
+2. Matches the dead-lettered work.
+3. Validates tenant context.
+4. Increments the processing generation.
+5. Transitions database state from `DeadLettered` to `Queued`.
+6. Publishes a replacement message.
+7. Completes the original dead-letter message only after replacement publication succeeds.
 
-generation-specific broker MessageId for re-drive.
+Generation-specific message identity helps distinguish the replacement attempt from the original processing attempt.
 
-Demonstrated failure sequence
+Evidence:
 
-The P5 Azure failure exercise demonstrated:
+- [`docs/evidence/p5/failure-demo.md`](docs/evidence/p5/failure-demo.md)
+- [`docs/evidence/p12/failure-recovery.md`](docs/evidence/p12/failure-recovery.md)
 
-Queued
--> Processing
--> retry
--> DeadLettered
--> re-drive
--> Queued
--> Processing
--> Extracted
+## Security & Privacy
 
-The re-drive tool:
+### Authentication & Authorization
 
-loads authoritative PostgreSQL state;
+The production-reference identity model uses Microsoft Entra ID.
 
-requires an eligible dead-lettered/re-drive state;
+- The API uses Entra authentication through Microsoft.Identity.Web.
+- The review portal uses Entra OpenID Connect.
+- The portal acquires downstream API tokens.
+- Reviewer identity comes from the authenticated principal.
+- Azure-hosted workloads prefer managed identity for supported Azure services.
 
-locates the matching DLQ message;
+### Managed Identity & Secrets
 
-validates document and tenant identity;
+Azure Key Vault is part of the reference architecture for secret material that cannot be eliminated through identity-based access.
 
-increments RedriveCount;
+The review portal architecture includes a user-assigned managed identity and federated identity credential approach rather than introducing an application client secret.
 
-transitions durable state back to Queued;
+### Private Networking
 
-publishes a generation-specific replacement message;
+The production-reference Terraform topology includes:
 
-completes the original DLQ message only after successful
-publication.
+- VNet: `10.40.0.0/16`
+- Container Apps subnet: `10.40.0.0/23`
+- Private Endpoint subnet: `10.40.2.0/24`
+- Private Endpoint for Blob Storage
+- Private Endpoint for Service Bus
+- Private Endpoint for Key Vault
+- Private Endpoint for Azure AI Document Intelligence
+- Private Endpoint for PostgreSQL
 
-This minimizes message-loss risk during recovery.
+Private DNS zones include:
 
-9. Human review / fallback strategy
+- `privatelink.blob.core.windows.net`
+- `privatelink.servicebus.windows.net`
+- `privatelink.vaultcore.azure.net`
+- `privatelink.cognitiveservices.azure.com`
+- `privatelink.postgres.database.azure.com`
 
-Documents that cannot safely auto-progress are routed to human review
-based on deterministic confidence and validation policy.
+Backend public access is disabled where supported in the target Terraform design.
 
-The review workflow supports:
+Service Bus Premium is required by the Private Link design. It is therefore a production-reference choice rather than the default recommendation for a low-cost portfolio deployment.
 
-review creation for routed documents;
+### Telemetry Privacy
 
-authenticated reviewer identity;
+Custom telemetry uses bounded, low-cardinality tags.
 
-inspection of extracted analysis;
+Metric dimensions deliberately avoid:
 
-field-level corrections;
+- document IDs;
+- reviewer IDs;
+- filenames;
+- extracted document values;
+- exception messages.
 
-approval/rejection decisions;
+This reduces privacy exposure and uncontrolled telemetry-cardinality growth.
 
-decision reasons;
+## Observability & SLO Readiness
 
-timestamps;
+API, worker, and review components share OpenTelemetry instrumentation.
 
-persisted correction history;
+Representative metrics include:
 
-document-state transitions;
+- `intellidocs.documents.processed`
+- `intellidocs.document.processing.duration`
+- `intellidocs.ai.classification.confidence`
+- `intellidocs.ai.policy.confidence`
+- `intellidocs.routing.decisions`
+- `intellidocs.validation.issues`
+- `intellidocs.review.corrections`
+- `intellidocs.review.decisions`
+- `intellidocs.processing.retries`
+- `intellidocs.processing.deadletters`
+- `intellidocs.ai.document_intelligence.operations`
 
-review/correction telemetry.
+The Azure reference architecture includes workspace-based Application Insights and an Azure Monitor workbook for operations, AI quality, review behavior, and cost-related signals.
 
-The design treats human review as a first-class business workflow, not
-an exception hidden inside the AI layer.
+These signals make the platform **SLO-ready**, but the repository does **not** claim production SLO attainment.
 
-10. Observability and SLOs
+A production deployment could establish objectives for:
 
-Telemetry
+- ingestion availability;
+- end-to-end processing latency;
+- successful processing rate;
+- retry and dead-letter rate;
+- review backlog age;
+- automated acceptance rate;
+- correction rate.
 
-The shared IntelliDocs OpenTelemetry meter/activity source emits
-signals for:
+Those objectives should be baselined against representative deployed traffic before operational commitments are defined.
 
-processed documents;
+## Run Locally
 
-processing duration;
+### Prerequisites
 
-classification confidence;
+The local workflow expects:
 
-policy confidence;
+- .NET SDK;
+- Docker / Docker Compose;
+- PostgreSQL-compatible local dependencies defined by the repository;
+- Python and evaluation-test dependencies;
+- Terraform for infrastructure validation.
 
-routing decisions;
+Azure credentials are required only for workflows that actually call deployed Azure resources.
 
-validation issues;
+### Start Dependencies
 
-review corrections;
+```powershell
+docker compose up -d
+```
 
-review decisions;
+### Run the API
 
-processing retries;
-
-dead letters;
-
-Document Intelligence operations.
-
-A workspace-based Application Insights resource and Azure Monitor
-workbook are defined in Terraform. The workbook covers operational
-health, AI quality, review behavior, and usage/cost proxies.
-
-Operational indicators
-
-The project exposes the signals needed to reason about:
-
-API availability and latency;
-
-document throughput;
-
-processing latency;
-
-failure/retry/DLQ rates;
-
-AI confidence distribution;
-
-validation severity;
-
-auto-route vs review-route distribution;
-
-correction/review outcomes;
-
-Document Intelligence operation volume.
-
-SLO position
-
-This portfolio implementation establishes SLO-ready telemetry, but
-it does not claim production SLO attainment from local tests. Production
-targets should be established after representative workload and Azure
-deployment measurements.
-
-Candidate production SLOs include API availability, end-to-end
-processing latency, DLQ rate, review backlog age, and successful
-processing ratio.
-
-11. MLOps/model versioning and rollback
-
-Each analysis can retain the AI model identifier and model version
-alongside the document-processing record. This provides the minimum
-traceability needed to correlate outputs and quality metrics with a
-model generation.
-
-The evaluation suite provides a regression gate before changing
-classification/extraction behavior.
-
-A production MLOps extension should add:
-
-versioned representative datasets;
-
-immutable model artifacts/configuration;
-
-per-version offline quality reports;
-
-approval gates before promotion;
-
-canary/shadow evaluation;
-
-drift monitoring;
-
-explicit rollback to the previous approved model/configuration;
-
-reviewer-correction feedback pipelines with governance.
-
-Automated retraining and automatic promotion are intentionally outside
-the current scope.
-
-12. Deployment and CI/CD
-
-Infrastructure is defined under infra/terraform.
-
-The Azure reference architecture includes:
-
-resource group;
-
-Storage;
-
-PostgreSQL Flexible Server;
-
-Service Bus;
-
-Azure AI Document Intelligence;
-
-Log Analytics;
-
-Application Insights;
-
-Container Apps environment/workloads;
-
-Entra application registrations and identity configuration;
-
-managed identities and RBAC;
-
-Key Vault;
-
-VNet/subnets;
-
-Private Endpoints;
-
-Private DNS;
-
-Azure Monitor workbook.
-
-The intended CI/CD security model is GitHub Actions → OIDC/federated
-Azure identity, avoiding long-lived Azure deployment credentials.
-
-Deployment-validation boundary
-
-P3/P4 include live Azure infrastructure/Document Intelligence evidence.
-Later P9/P10/P11 production-reference identity, networking, and
-observability work was validated primarily through implementation,
-automated tests, Terraform formatting/validation, and committed evidence
-rather than a final full Azure apply.
-
-Do not interpret static Terraform validation as proof that every
-production-reference Azure path is currently live.
-
-13. How to run locally
-
-Prerequisites
-
-.NET 10 SDK;
-
-Docker Desktop / Docker Compose;
-
-PostgreSQL development container;
-
-Azurite for local Blob Storage;
-
-Python 3 + pytest;
-
-Terraform for infrastructure validation.
-
-Start local dependencies
-
-Start the repository's Docker-based development dependencies. The
-established local environment uses:
-
-PostgreSQL exposed on host port 5433;
-
-Azurite Blob service on the standard development ports.
-
-Run the API
-
-In PowerShell:
-
+```powershell
 $env:ASPNETCORE_ENVIRONMENT = "Development"
 $env:ASPNETCORE_URLS = "http://127.0.0.1:5000"
 
-dotnet run `  --project ".\src\IntelliDocs.Api\IntelliDocs.Api.csproj"`
---no-launch-profile
+dotnet run `
+    --project ".\src\IntelliDocs.Api\IntelliDocs.Api.csproj" `
+    --no-launch-profile
+```
 
-Health check:
+### Health Check
 
-Invoke-WebRequest `  -UseBasicParsing`
--Uri "http://127.0.0.1:5000/health"
+```powershell
+Invoke-WebRequest `
+    -Uri "http://127.0.0.1:5000/health" `
+    -UseBasicParsing
+```
 
-Expected payload:
+Expected result:
 
-{
-"status": "healthy",
-"service": "IntelliDocs.Api"
-}
+```text
+HTTP 200
+```
 
-Run the full verification gate
+The health endpoint is intentionally available before authentication middleware so infrastructure health probing does not depend on Entra configuration. Protected application endpoints remain authenticated.
 
+### Run Verification
+
+```powershell
 .\scripts\p12\verify.ps1
+```
 
-Or run quality regression only:
+Additional P12 scripts:
 
-.\scripts\p12\quality-regression.ps1
+```text
+scripts/p12/load-test.ps1
+scripts/p12/quality-regression.ps1
+scripts/p12/verify.ps1
+```
 
-The verification script covers .NET build/tests, Python evaluation,
-Terraform formatting/validation, and Git diff hygiene.
+## Azure Deployment
 
-14. How to deploy a low-cost Azure demo
+### Production-Reference Architecture
 
-The full production-reference topology should not be applied merely
-for a portfolio demo. In particular, Service Bus Premium and Private
-Link/private networking can materially increase cost.
+Terraform defines the Azure-oriented target architecture across identity, storage, messaging, compute, networking, secrets, monitoring, and AI integration.
 
-For a low-cost demonstration:
+The production-reference topology is intentionally stronger - and more expensive - than what is necessary for a portfolio demonstration.
 
-use a dedicated disposable Azure resource group;
+### Low-Cost Demo
 
-deploy only the minimum resources needed for the scenario;
+Do **not** apply the entire production-reference topology solely to prove that every Azure resource can exist simultaneously.
 
-prefer development/consumption-compatible SKUs where the feature set
-permits;
+A lower-cost demonstration can focus on:
 
-demonstrate Azure AI Document Intelligence with synthetic documents;
+1. API and worker behavior.
+2. PostgreSQL workflow state.
+3. Blob-based document storage.
+4. Azure AI Document Intelligence integration.
+5. Service Bus processing where messaging evidence is required.
+6. Local review and verification workflows.
+7. Terraform validation for expensive production-reference controls.
 
-keep the API/worker local or use a minimal Container Apps deployment
-if live hosting is required;
+Evaluate cost before provisioning Service Bus Premium and the complete Private Endpoint topology.
 
-use managed identity/RBAC where the chosen demo topology supports
-it;
+### CI/CD
 
-omit the full Private Link topology from the inexpensive demo and
-present it as the committed production-reference design;
+The repository targets GitHub Actions with Azure OIDC/federated authentication rather than long-lived Azure credentials stored as CI secrets.
 
-set a budget/cost alert before the demo;
+A production pipeline can separate:
 
-run the documented walkthrough;
+```text
+build
+  -> automated tests
+  -> quality regression
+  -> Terraform validation
+  -> artifact/container publication
+  -> environment-specific plan
+  -> controlled deployment
+  -> post-deployment verification
+```
 
-destroy the demo resources immediately afterward.
+Infrastructure changes should be reviewed through Terraform plans before apply.
 
-Before any terraform apply, review the selected SKUs and planned
-changes. The committed production-reference Terraform includes
-components intended to demonstrate architecture, not to minimize
-portfolio-demo spend.
+### Deployment Validation Boundary
 
-15. Test and benchmark results
+P3/P4 include live Azure infrastructure and Azure AI Document Intelligence evidence.
 
-Final regression
+P9/P10/P11 were validated primarily through implementation, automated tests, Terraform formatting/validation, and repository evidence rather than a final full production-topology apply.
 
-.NET tests: 65 passed / 65
-Python tests: 21 passed / 21
-Terraform fmt: PASS
-Terraform validate: PASS
-Git diff check: PASS
-API health: HTTP 200
+The following remain environment-specific deployment-validation activities:
 
-Local bounded-concurrency probe
+- final Entra federation and consent;
+- managed-identity bootstrap behavior;
+- Key Vault runtime secret resolution;
+- live Private Endpoint routing;
+- Private DNS resolution;
+- live Application Insights ingestion;
+- Azure Monitor workbook rendering with deployed telemetry;
+- final Azure cost behavior;
+- production-scale capacity testing.
 
-Target: local /health endpoint.
+This boundary is deliberate: static/IaC validation is not presented as equivalent to production operation.
 
-Requests Concurrency Success Failure Success Elapsed RPS P50 P95 P99 Max
-rate
+## Demo Walkthrough
 
-      20             2        20         0      100%    0.83 s   24.07   2.11   84.11 88.66 ms 88.66 ms
-                                                                           ms      ms
+1. Start with the architecture diagram and explain why Event Grid and Service Bus have different responsibilities.
+2. Show the ingestion API and PostgreSQL state machine.
+3. Demonstrate Azure AI Document Intelligence integration.
+4. Show classification/extraction output passing through deterministic confidence and validation policy.
+5. Demonstrate the human-review fallback for uncertain results.
+6. Explain retry, DLQ, and safe re-drive using the recorded failure evidence.
+7. Show Entra, managed identity, Key Vault, and private-networking Terraform.
+8. Show OpenTelemetry signals and the Azure Monitor workbook definition.
+9. Run or present the final automated verification.
+10. Close with the deployment boundary: what was live-validated, what is production-reference IaC, and what remains environment-specific validation.
 
-     500            20       500         0      100%   45.79 s   10.92   3.77   26.40   662.57   750.84
-                                                                           ms      ms       ms       ms
+Detailed runbook:
 
-Interpretation: the primary result is 520/520 successful local
-requests. This is a bounded-concurrency reliability/performance probe,
-not a production capacity benchmark. PowerShell Start-Job overhead,
-local execution, and the lightweight health endpoint materially affect
-throughput and tail latency.
+[`docs/evidence/p12/demo-runbook.md`](docs/evidence/p12/demo-runbook.md)
 
-16. Known trade-offs / production improvements
+## Design Trade-offs & Production Improvements
 
-Current choice Trade-off Production improvement
+| Current choice | Trade-off / production extension |
+| --- | --- |
+| `0.90` confidence threshold | Clear and testable; calibrate per field/document class against representative labeled data |
+| Human review | Improves control but adds operational latency/cost; add prioritized queues and reviewer-capacity SLOs |
+| PostgreSQL authoritative state | Strong audit/query model; extend with outbox/inbox patterns for stronger message/database coordination |
+| Service Bus durable queue | Strong retry/DLQ semantics; tune concurrency, locks, sessions/partitioning using representative workloads |
+| Service Bus Premium | Supports Private Link but materially increases demo cost |
+| Private Endpoints | Improve isolation while increasing DNS/network complexity |
+| Local P12 load probe | Cheap and reproducible; use distributed deployed-environment testing for production capacity work |
+| AI-assisted extraction | Probabilistic; expand labeled evaluation sets, drift monitoring, and version gates |
+| Terraform reference topology | Repeatable, but static validation is not runtime proof; add environment apply and post-deployment tests |
 
-Synthetic evaluation Repeatable but not Build sanitized,
-corpus representative held-out enterprise
-corpus
+## Evidence
 
-Local health load probe Good smoke signal, weak k6/Locust/Azure Load
-capacity evidence Testing against deployed
-workload
+Detailed implementation and validation evidence is retained under `docs/evidence/`.
 
-Deterministic Explainable and Calibrate per document
-thresholds testable type/field using
-production evidence
+| Capability | Evidence |
+| --- | --- |
+| Azure AI Document Intelligence | [`docs/evidence/p4/`](docs/evidence/p4/) |
+| Retry / DLQ / failure demonstration | [`docs/evidence/p5/failure-demo.md`](docs/evidence/p5/failure-demo.md) |
+| Identity / managed access | [`docs/evidence/p9/identity.md`](docs/evidence/p9/identity.md) |
+| Private-reference networking | [`docs/evidence/p10/network.md`](docs/evidence/p10/network.md) |
+| Observability / quality / cost telemetry | [`docs/evidence/p11/observability.md`](docs/evidence/p11/observability.md) |
+| Local reliability probe | [`docs/evidence/p12/load-test.md`](docs/evidence/p12/load-test.md) |
+| Failure recovery | [`docs/evidence/p12/failure-recovery.md`](docs/evidence/p12/failure-recovery.md) |
+| Quality regression | [`docs/evidence/p12/quality-regression.md`](docs/evidence/p12/quality-regression.md) |
+| Demo runbook | [`docs/evidence/p12/demo-runbook.md`](docs/evidence/p12/demo-runbook.md) |
 
-Manual review workflow Safe fallback Add queues, SLAs,
-assignment, escalation,
-reviewer analytics
+## Resource Cleanup
 
-DI operation count as Useful operationally, Join Azure Cost
-usage proxy not billing truth Management/exported
-billing data
+### Local
 
-Static validation of Safe/cost-aware Run controlled staging
-later Azure phases deployment and
-integration suite
+Stop local containers when no longer required:
 
-Service Bus Premium for Strong isolation, Separate low-cost demo
-Private Link reference higher demo cost and production Terraform
-profiles
+```powershell
+docker compose down
+```
 
-Basic model Supports attribution Add model registry,
-traceability promotion gates, canary
-and rollback automation
+Use volume removal only when intentionally deleting persisted local development data.
 
-No automated retraining Avoids unsafe feedback Governed
-loops correction-to-training
-pipeline
+### Azure
 
-17. Demo walkthrough
+Before destroying Azure infrastructure, inspect the destruction plan:
 
-A concise portfolio walkthrough:
+```powershell
+terraform plan -destroy
+```
 
-Problem: explain the manual enterprise-document processing
-bottleneck.
+Review the plan carefully before any destructive operation.
 
-Architecture: show the 30-second diagram and the Event Grid vs
-Service Bus responsibility split.
+Remove temporary demo resources promptly to control cost, especially premium messaging and private-networking resources. Do not destroy shared or production resources merely because they appear in project Terraform.
 
-Ingestion: submit a synthetic document and show durable
-PostgreSQL state plus Blob storage.
+## Project Status
 
-AI analysis: show Document Intelligence output, classification,
-normalized extraction, and captured model metadata.
+**P0-P12 complete.**
 
-Policy: demonstrate confidence/business validation and
-deterministic routing.
+Final verification recorded:
 
-Human review: correct a field and record an auditable decision.
+- **65/65** .NET tests passed;
+- **21/21** Python evaluation tests passed;
+- Terraform formatting and validation passed;
+- API health regression returned **HTTP 200**;
+- **520/520** requests succeeded in the local P12 reliability probe;
+- retry, dead-letter, and re-drive behavior is documented with evidence.
 
-Failure recovery: explain or replay the retry → DLQ → re-drive →
-successful processing path.
+The repository is a **production-oriented reference implementation with explicit evidence boundaries**, not a claim that every production-reference Azure component has undergone full live production validation.
 
-Security: show Entra/managed-identity/Key-Vault design and
-private-reference network diagram.
+P3/P4 include live Azure infrastructure and Document Intelligence evidence. P9/P10/P11 primarily demonstrate implementation, automated validation, Terraform correctness, and documented architecture.
 
-Observability: show the telemetry catalog/workbook definition
-and explain quality/operations/cost signals.
-
-Verification: run scripts/p12/verify.ps1 and show the passing
-engineering gates.
-
-Boundary: clearly distinguish live-tested components from
-production-reference IaC that was statically validated.
-
-Detailed walkthrough: docs/evidence/p12/demo-runbook.md.
-
-Use synthetic documents only and never display credentials, keys,
-tokens, connection strings, or SAS values.
-
-18. Resource cleanup
-
-Local
-
-Stop local application processes and remove disposable
-containers/volumes according to the repository's Docker configuration.
-
-Before deleting volumes, confirm that no local development data needs to
-be retained.
-
-Azure demo
-
-For a disposable demo resource group, the safest cleanup is to destroy
-only resources that belong exclusively to that demo.
-
-If the environment was created from an isolated Terraform state:
-
-terraform -chdir="infra\terraform" plan -destroy
-
-Review the plan carefully before executing any destroy operation.
-
-If a dedicated resource group was used, verify its contents before
-deleting it. Never run destructive commands against a shared
-subscription/resource group without confirming resource ownership.
-
-After cleanup, verify:
-
-Container Apps/demo compute is removed;
-
-Service Bus resources are removed if no longer needed;
-
-Document Intelligence demo resources are removed if disposable;
-
-PostgreSQL and Storage resources are removed only when their data is
-no longer required;
-
-Private Endpoints/DNS links are removed with the disposable
-environment;
-
-Key Vault soft-delete behavior is understood;
-
-no unexpected billable resources remain.
-
-Evidence map
-
-Phase Evidence
-
-P4 Azure Document Intelligence integration evidence
-P5 docs/evidence/p5/failure-demo.md
-P9 docs/evidence/p9/identity.md
-P10 docs/evidence/p10/network.md
-P11 docs/evidence/p11/observability.md
-P12 docs/evidence/p12/load-test.md
-P12 docs/evidence/p12/failure-recovery.md
-P12 docs/evidence/p12/quality-regression.md
-P12 docs/evidence/p12/demo-runbook.md
-
-Final status
-
-P0--P12 complete.
-
-IntelliDocs AI is a portfolio-ready Azure/.NET document-intelligence
-reference implementation demonstrating secure ingestion, AI-assisted
-extraction, deterministic policy, human review, resilient messaging,
-auditable state, infrastructure as code, and operational/quality
-telemetry---with explicit boundaries between validated implementation
-evidence and production deployment claims.
+Live private networking, final Entra federation/consent, deployed monitoring behavior, production-scale capacity, and final Azure cost characteristics remain environment-specific deployment-validation work.
