@@ -16,7 +16,7 @@ resource "azurerm_key_vault" "main" {
   rbac_authorization_enabled    = true
   purge_protection_enabled      = true
   soft_delete_retention_days    = 7
-  public_network_access_enabled = true
+  public_network_access_enabled = false
 
   tags = local.common_tags
 }

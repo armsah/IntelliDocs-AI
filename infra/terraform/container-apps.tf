@@ -3,6 +3,8 @@ resource "azurerm_container_app_environment" "main" {
   location            = azurerm_resource_group.main.location
   resource_group_name = azurerm_resource_group.main.name
 
+  infrastructure_subnet_id = azurerm_subnet.container_apps.id
+
   logs_destination           = "log-analytics"
   log_analytics_workspace_id = azurerm_log_analytics_workspace.main.id
 
@@ -117,7 +119,7 @@ resource "azurerm_container_app" "review_portal" {
 
       env {
         name  = "AzureAd__ClientId"
-        value = azuread_application_registration.api.client_id
+        value = azuread_application_registration.review_portal.client_id
       }
 
       env {

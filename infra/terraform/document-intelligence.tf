@@ -7,7 +7,7 @@ resource "azurerm_cognitive_account" "document_intelligence" {
   kind     = "FormRecognizer"
   sku_name = "S0"
 
-  public_network_access_enabled = true
+  public_network_access_enabled = false
   local_auth_enabled            = false
 
   tags = local.common_tags

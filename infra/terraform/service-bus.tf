@@ -4,9 +4,11 @@ resource "azurerm_servicebus_namespace" "main" {
   location            = azurerm_resource_group.main.location
   resource_group_name = azurerm_resource_group.main.name
 
-  sku = "Standard"
+  sku = "Premium"
 
-  public_network_access_enabled = true
+  capacity = 1
+
+  public_network_access_enabled = false
 
   tags = local.common_tags
 }

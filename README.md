@@ -91,40 +91,36 @@ Document processing state remains durable in PostgreSQL rather than being inferr
 - [x] P7 — Confidence policy and business validation
 - [x] P8 — Human-review portal
 - [x] P9 — Entra ID, managed identity and Key Vault
-- [ ] P10 — Private-reference networking
+- [x] P10 — Private-reference networking
 - [ ] P11 — Observability, AI quality and cost metrics
 - [ ] P12 — Load, failure and quality testing
 
 ## Current Phase
 
-**P9 — Entra ID, managed identity and Key Vault: complete**
+**P10 — Private-reference networking: complete**
 
-P8 makes deterministic `NeedsReview` decisions operationally reviewable while preserving the original machine result as immutable evidence.
+P10 defines the private-reference network boundary for the Azure-hosted IntelliDocs services.
 
-The human-review workflow now provides:
+The Terraform architecture now provides:
 
-- a Blazor Server review queue for documents in `NeedsReview`
-- explicit `NeedsReview -> InReview -> Approved/Rejected` state transitions
-- reviewer assignment and reviewer-attributed workflow actions
-- field corrections stored separately from the original AI extraction result
-- auditable correction values, reviewer identity, and correction timestamps
-- approval/rejection decisions with reviewer identity, reason, and decision timestamp
-- PostgreSQL persistence for reviews and corrections
-- API endpoints for queue, review start, corrections, and final decisions
-- integration tests covering auditable approval and rejection workflows
-- reproducible Development-only demo seeding
-- Linux container images for the API and review portal
-- optional Azure Container Apps definitions, disabled by default until application deployment configuration is supplied
+- an IntelliDocs virtual network with dedicated Container Apps and private-endpoint subnets
+- Container Apps environment integration with the dedicated infrastructure subnet
+- private endpoints for Blob Storage, Service Bus, Key Vault, Document Intelligence, and PostgreSQL
+- private DNS zones and VNet links for all five sensitive backend services
+- public network access disabled for the five sensitive PaaS dependencies
+- Service Bus Premium to support the private endpoint architecture
+- Terraform outputs for the VNet, subnets, and private endpoint addresses
+- explicit separation between the authenticated reviewer-facing application edge and sensitive backend paths
 
-The complete .NET regression suite passes 63/63 tests, the Python evaluation regression suite passes 21/21 tests, and the P7 validation regression passes 29/29 tests after the Linux-build Unicode portability repair.
+P10 evidence, including the network diagram, sensitive-path matrix, DNS mapping, and deployment-validation boundary, is retained at `docs/evidence/p10/network.md`.
 
-P8 evidence is retained at `docs/evidence/p8/review-demo.md`.
+The Terraform configuration passes formatting and static validation. P10 does not claim that the private-reference topology has been applied or live-validated in Azure.
 
-The P8 exit criterion — corrections auditable: **PASS**.
+The P10 exit criterion — sensitive paths documented: **PASS**.
 
 Next:
 
-**P10 — Private-reference networking**
+**P11 — Observability, AI quality and cost metrics**
 
 ---
 
@@ -1671,18 +1667,17 @@ The P9 exit criterion — no application client secret: **PASS**.
 ---
 ## Next Phase
 
-**P10 — Private-reference networking**
+**P11 — Observability, AI quality and cost metrics**
 
-P9 hardens application identity and secret handling for the Azure-hosted IntelliDocs services.
+P11 will add operational and AI-quality observability around the processing pipeline.
 
 Planned work includes:
 
-- Microsoft Entra authentication for reviewer-facing and API access
-- managed identities for Azure-hosted application workloads
-- Azure Key Vault for secrets that cannot be eliminated
-- least-privilege Azure RBAC assignments
-- removal of development-style application credential handling from deployed workloads
-- reviewer identity derived from authenticated Entra principals instead of manually supplied reviewer strings
-- authentication and authorization tests and evidence
+- end-to-end application telemetry and distributed tracing
+- processing latency, throughput, retry, DLQ, and review-routing metrics
+- AI extraction and classification quality metrics
+- confidence and human-review outcome monitoring
+- cost-oriented Azure service metrics and operational dashboards
+- evidence that makes runtime health, AI quality, and cost behavior observable
 
-P10 will subsequently address the private-reference networking boundary.
+P12 will subsequently exercise the system with load, failure, and quality testing and complete the portfolio demo polish.

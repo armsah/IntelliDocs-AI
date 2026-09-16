@@ -101,3 +101,21 @@ variable "postgresql_connection_string_key_vault_secret_id" {
     error_message = "postgresql_connection_string_key_vault_secret_id must be supplied when application Container Apps are deployed."
   }
 }
+
+variable "virtual_network_address_space" {
+  description = "Address space for the IntelliDocs virtual network."
+  type        = string
+  default     = "10.40.0.0/16"
+}
+
+variable "container_apps_subnet_address_prefix" {
+  description = "Dedicated subnet used by the Azure Container Apps environment."
+  type        = string
+  default     = "10.40.0.0/23"
+}
+
+variable "private_endpoints_subnet_address_prefix" {
+  description = "Dedicated subnet used by Azure Private Endpoints."
+  type        = string
+  default     = "10.40.2.0/24"
+}

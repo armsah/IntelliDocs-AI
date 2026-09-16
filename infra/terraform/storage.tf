@@ -17,7 +17,9 @@ resource "azurerm_storage_account" "documents" {
   min_tls_version                 = "TLS1_2"
   allow_nested_items_to_be_public = false
 
-  tags = local.common_tags
+  tags                  = local.common_tags
+  public_network_access = "Disabled"
+
 }
 
 resource "azurerm_storage_container" "documents" {

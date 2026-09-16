@@ -133,3 +133,43 @@ output "review_portal_credential_identity_client_id" {
   description = "Client ID of the user-assigned managed identity used as the Review Portal application credential."
   value       = azurerm_user_assigned_identity.review_portal_credential.client_id
 }
+
+output "virtual_network_name" {
+  description = "Name of the IntelliDocs virtual network."
+  value       = azurerm_virtual_network.main.name
+}
+
+output "container_apps_subnet_id" {
+  description = "Resource ID of the dedicated Container Apps infrastructure subnet."
+  value       = azurerm_subnet.container_apps.id
+}
+
+output "private_endpoints_subnet_id" {
+  description = "Resource ID of the dedicated private-endpoint subnet."
+  value       = azurerm_subnet.private_endpoints.id
+}
+
+output "blob_private_endpoint_ip" {
+  description = "Private IP address assigned to the Blob Storage private endpoint."
+  value       = azurerm_private_endpoint.blob.private_service_connection[0].private_ip_address
+}
+
+output "service_bus_private_endpoint_ip" {
+  description = "Private IP address assigned to the Service Bus private endpoint."
+  value       = azurerm_private_endpoint.service_bus.private_service_connection[0].private_ip_address
+}
+
+output "key_vault_private_endpoint_ip" {
+  description = "Private IP address assigned to the Key Vault private endpoint."
+  value       = azurerm_private_endpoint.key_vault.private_service_connection[0].private_ip_address
+}
+
+output "document_intelligence_private_endpoint_ip" {
+  description = "Private IP address assigned to the Document Intelligence private endpoint."
+  value       = azurerm_private_endpoint.document_intelligence.private_service_connection[0].private_ip_address
+}
+
+output "postgresql_private_endpoint_ip" {
+  description = "Private IP address assigned to the PostgreSQL private endpoint."
+  value       = azurerm_private_endpoint.postgresql.private_service_connection[0].private_ip_address
+}
