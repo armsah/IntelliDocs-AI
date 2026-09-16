@@ -93,64 +93,39 @@ Document processing state remains durable in PostgreSQL rather than being inferr
 - [x] P9 — Entra ID, managed identity and Key Vault
 - [x] P10 — Private-reference networking
 - [x] P11 — Observability, AI quality and cost metrics
-- [ ] P12 — Load, failure and quality testing
+- [x] P12 — Load, failure and quality testing
+
 
 ## Current Phase
 
-## P11 — Observability, AI Quality and Cost Metrics
+## P12 — Portfolio Validation and Demo Polish
 
-P11 adds a shared observability layer across the IntelliDocs API, processing Worker, and Review Portal.
+P12 completes the implementation roadmap with load/runtime reliability testing, failure/recovery verification, quality regression, and a portfolio demo runbook.
 
-Application telemetry uses .NET `Meter` and `ActivitySource` primitives with Azure Monitor OpenTelemetry integration. Terraform adds workspace-based Application Insights backed by the existing Log Analytics workspace and supplies its connection string to the API, Worker, and Review Portal Container Apps.
+Final measured validation:
 
-The processing pipeline exposes the following custom metrics:
+- .NET regression suite: **65/65 PASS**
+- Python document/AI evaluation: **21/21 PASS**
+- standalone API health: **HTTP 200 PASS**
+- smoke probe: **20/20 requests successful** at concurrency 2
+- bounded-concurrency probe: **500/500 requests successful** at concurrency 20
+- P5 Service Bus retry/DLQ/re-drive recovery evidence revalidated
+- P12 health/authentication integration defect fixed and regression-tested
 
-- `intellidocs.documents.processed`
-- `intellidocs.document.processing.duration`
-- `intellidocs.ai.classification.confidence`
-- `intellidocs.ai.policy.confidence`
-- `intellidocs.routing.decisions`
-- `intellidocs.validation.issues`
-- `intellidocs.review.corrections`
-- `intellidocs.review.decisions`
-- `intellidocs.processing.retries`
-- `intellidocs.processing.deadletters`
-- `intellidocs.ai.document_intelligence.operations`
+The local load harness is a reliability/performance probe, not a production capacity benchmark. PowerShell job overhead, the lightweight health target, and local execution materially affect throughput and tail-latency measurements.
 
-These signals make processing throughput, successful processing latency, retry/DLQ behavior, AI confidence, deterministic routing, validation outcomes, human-review activity, and Document Intelligence usage observable.
+P12 evidence:
 
-Telemetry dimensions are intentionally bounded. Approved dimensions include `document.type`, `outcome`, `decision`, `severity`, and `operation`.
+- `docs/evidence/p12/load-test.md`
+- `docs/evidence/p12/failure-recovery.md`
+- `docs/evidence/p12/quality-regression.md`
+- `docs/evidence/p12/demo-runbook.md`
 
-Document IDs, reviewer identities, filenames, extracted values, correction values, exception messages, and free-text reasons are not used as custom metric dimensions.
+The P12 exit criterion — **Portfolio-ready**: **PASS**.
 
-Terraform defines the **IntelliDocs - Operations, AI Quality and Cost** Azure Monitor workbook for operational, AI-quality, human-review, and processing-usage visibility.
-
-The Document Intelligence operation counter is an application-level usage proxy, not an Azure billing meter. Actual Azure charges remain authoritative in Azure billing and cost-management data.
-
-P11 evidence, including the telemetry inventory, dashboard design, privacy/cardinality policy, cost interpretation, and deployment-validation boundary, is retained at:
-
-`docs/evidence/p11/observability.md`
-
-P11 validation completed with:
-
-- Terraform formatting and static validation: PASS
-- .NET build: PASS
-- .NET tests: 64/64 passed
-- Python evaluation tests: 21/21 passed
-- README UTF-8/NUL integrity validation: PASS
-- `git diff --check`: PASS, with line-ending normalization warnings only
-
-Terraform was intentionally not applied during P11. Live Application Insights ingestion, workbook rendering, private-network telemetry behavior, and Azure cost correlation remain deployment-validation activities.
-
-The P11 exit criterion — **Quality + ops visible**: **PASS**.
+The repository now represents the completed P0-P12 implementation roadmap.
 
 ---
-
-## Next Phase
-
-**P12 — Load, failure and quality testing**
-
-P12 will exercise the completed processing pipeline under load and controlled failure scenarios, validate end-to-end quality behavior, and complete the portfolio demonstration and operational polish.
 
 ## P0 — Architecture and Product Definition
 
@@ -1678,35 +1653,33 @@ Development-stage public endpoints, local authentication, and API-key/connection
 
 ---
 
-## P9 — Identity and Secretless Authentication
+## Portfolio Validation Summary
 
-P9 adds Microsoft Entra authentication, managed identities, Azure Key Vault integration, workload identity federation, and least-privilege Azure RBAC.
+| Area | Evidence | Status |
+| --- | --- | --- |
+| Application regression | 65/65 .NET tests | PASS |
+| AI/document quality | 21/21 Python evaluation tests | PASS |
+| Standalone runtime | /health returns HTTP 200 | PASS |
+| Local smoke probe | 20/20 successful, concurrency 2 | PASS |
+| Local bounded-concurrency probe | 500/500 successful, concurrency 20 | PASS |
+| Failure recovery | bounded retry, DLQ and controlled re-drive evidence | PASS |
+| Terraform static validation | formatting and configuration validation | PASS |
+| Demo preparation | P12 portfolio demo runbook | PASS |
 
-Reviewer-facing workflows require authentication, and reviewer identity is derived from the authenticated Entra principal rather than a caller-supplied reviewer string.
+### Deployment Boundary
 
-The Review Portal requests the delegated `Review.Access` scope when calling the protected API. Its production confidential-client credential uses a federated user-assigned managed identity with `SignedAssertionFromManagedIdentity` instead of an Entra application client secret.
+P3/P4 include live Azure infrastructure and Azure AI Document Intelligence evidence.
 
-The API and Worker use managed identity for supported Azure data-plane access. PostgreSQL runtime configuration is referenced through Azure Key Vault rather than embedded in deployed Container App environment-variable values.
+P9/P10/P11 production-reference identity, private networking, and observability additions were validated primarily through implementation, automated tests, Terraform static validation, and evidence documents rather than a final full-environment Terraform apply.
 
-P9 evidence, including the identity diagram, RBAC matrix, credential inventory, and validation boundary, is retained at `docs/evidence/p9/identity.md`.
+P12 load results are local reliability measurements and are not a production load certification. Live private-endpoint behavior, Application Insights ingestion/workbook rendering, final Azure cost behavior, and representative production-scale capacity remain deployment-validation activities.
 
-The P9 exit criterion — no application client secret: **PASS**.
+### Portfolio Demo
+
+The recommended end-to-end demonstration sequence is documented at docs/evidence/p12/demo-runbook.md. It covers architecture, ingestion, AI analysis, deterministic routing, human review, failure recovery, observability, identity/networking, and final engineering gates.
+
+Only synthetic documents should be used for demonstrations, and credentials, tokens, keys, connection strings, and SAS values must never be displayed.
 
 ---
 
-## Next Phase
-
-**P11 — Observability, AI quality and cost metrics**
-
-P11 will add operational and AI-quality observability around the processing pipeline.
-
-Planned work includes:
-
-- end-to-end application telemetry and distributed tracing
-- processing latency, throughput, retry, DLQ, and review-routing metrics
-- AI extraction and classification quality metrics
-- confidence and human-review outcome monitoring
-- cost-oriented Azure service metrics and operational dashboards
-- evidence that makes runtime health, AI quality, and cost behavior observable
-
-P12 will subsequently exercise the system with load, failure, and quality testing and complete the portfolio demo polish.
+**Project status: P0-P12 complete — portfolio-ready reference implementation.**

@@ -158,6 +158,25 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
+app.Map(
+    "/health",
+    healthApp =>
+    {
+        healthApp.Run(
+            async context =>
+            {
+                context.Response.StatusCode =
+                    StatusCodes.Status200OK;
+
+                await context.Response.WriteAsJsonAsync(
+                    new
+                    {
+                        status = "healthy",
+                        service = "IntelliDocs.Api"
+                    });
+            });
+    });
+
 app.UseHttpsRedirection();
 
 app.UseAuthentication();
@@ -165,14 +184,4 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-app.MapGet(
-    "/health",
-    () => Results.Ok(new
-    {
-        status = "healthy",
-        service = "IntelliDocs.Api"
-    }));
-
 app.Run();
-
-public partial class Program;
